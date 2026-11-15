@@ -243,7 +243,7 @@ const GRAMA_BIOMA = {
 GFX.criarGrama = function (mundo) {
   const cfg = GRAMA_BIOMA[mundo.bioma]; if (!cfg) return null;
   const Q = QUALIDADES_GFX[GFX.qualidade];
-  const n = Math.floor(Q.grama * cfg.dens);
+  const n = Math.floor(Q.grama * cfg.dens * Math.min(2.6, Math.pow((mundo.AREA || 150) / 150, 2)));
   // geometria: dois planos cruzados
   if (!GFX.geoGrama) {
     const pos = [], uv = [], nor = [], idx = [];

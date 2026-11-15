@@ -32,7 +32,7 @@ const CFG_3D = {
   esq_guerreiro: { arq: 'Skeleton_Warrior', anim: 'anim_esqueletos', clips: CLIPS_ESQ, altura: 1.95, armas: { 'handslotr': 'Skeleton_Axe', 'handslotl': 'Skeleton_Shield_Small_A' } },
   esq_rei: { arq: 'Skeleton_Warrior', anim: 'anim_esqueletos', clips: Object.assign({}, CLIPS_ESQ, { golpe: '2H_Melee_Attack_Chop' }), altura: 1.95, armas: { 'handslotr': 'Skeleton_Axe', 'handslotl': 'Skeleton_Shield_Large_A' } },
   esq_mago: { arq: 'Skeleton_Mage', anim: 'anim_esqueletos', clips: Object.assign({}, CLIPS_ESQ, { golpe: 'Spellcast_Shoot' }), altura: 1.9, armas: { 'handslotr': 'Skeleton_Staff' } },
-  lobo: { arq: 'Wolf', clips: { idle: 'WolfArmature|Idle', andar: 'WolfArmature|Walking', correr: 'WolfArmature|Walking' }, tamanho: 1.9, velCorrer: 1.9, bote: true, rotY: Math.PI / 2 },
+  lobo: { arq: 'Wolf', clips: { idle: 'WolfArmature|Idle', andar: 'WolfArmature|Walking', correr: 'WolfArmature|Walking' }, tamanho: 1.9, velCorrer: 1.9, bote: true, rotY: -Math.PI / 2 },
   aguia: { arq: 'Eagle', clips: { idle: 'EagleArmature|Flying', andar: 'EagleArmature|Flying', correr: 'EagleArmature|Flying' }, tamanho: 2.1, voa: 1.9, bote: true,
     cores: { Wings: 0x4a5664, Head: 0xd8dcd8, Beak: 0xd8a030, Claws: 0x2a2018 } },
   morcego: { arq: 'Bat', clips: { idle: 'BatArmature|Bat_Flying', andar: 'BatArmature|Bat_Flying', correr: 'BatArmature|Bat_Flying', golpe: 'BatArmature|Bat_Attack', morte: 'BatArmature|Bat_Death', dano: 'BatArmature|Bat_Hit' }, tamanho: 1.3, voa: 1.4,

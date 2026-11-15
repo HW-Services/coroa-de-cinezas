@@ -154,11 +154,12 @@ IT.calcStats = function (pers, buffs = [], mapaMods = []) {
   let vidaBase = C.base.vida + C.porNivel.vida * (L - 1);
   // itens
   let arma = null;
+  const regItens = { regenVida: 0, regenVidaPct: 0, regenRecPct: 0 };   // regeneração vem só dos itens
   for (const [slot, it] of Object.entries(pers.equip)) {
     if (!it) continue;
     if (slot === 'arma') arma = it;
     if (it.base && BASES[it.base].classe && BASES[it.base].classe !== pers.classe && BASES[it.base].slot === 'arma') continue;
-    for (const [k, v] of Object.entries(IT.statsDoItem(it))) add(k, v);
+    for (const [k, v] of Object.entries(IT.statsDoItem(it))) { add(k, v); if (k in regItens) regItens[k] += v; }
   }
   // árvore
   for (const p of PASSIVAS) { const r = pers.arvore[p.id] || 0; if (r) for (const [k, v] of Object.entries(p.stats)) add(k, v * r); }
@@ -188,8 +189,10 @@ IT.calcStats = function (pers, buffs = [], mapaMods = []) {
   const res = k => Math.min(75, g(k) + g('resTodas') - penal);
   r.res = { fisico: 0, fogo: res('resFogo'), frio: res('resFrio'), raio: res('resRaio'), veneno: res('resVeneno') };
   r.velMov = 7.2 * Math.max(0.5, 1 + g('velMov') / 100);
-  r.regenVida = g('regenVida') + r.vidaMax * g('regenVidaPct') / 100;
-  r.regenRec = C.recurso.regen * (1 + g('regenRecPct') / 100);
+  // sem regeneração base: só itens geram regeneração; árvore e bênçãos a ampliam
+  const extraVidaPct = g('regenVidaPct') - regItens.regenVidaPct;   // bênçãos temporárias (ex.: Avatar da Fênix)
+  r.regenVida = (regItens.regenVida + r.vidaMax * regItens.regenVidaPct / 100) * (1 + g('regenVidaMais') / 100) + r.vidaMax * extraVidaPct / 100;
+  r.regenRec = C.recurso.regen * (regItens.regenRecPct / 100) * (1 + (g('regenRecPct') - regItens.regenRecPct) / 100);
   r.recarga = Math.min(60, g('recarga'));
   r.area = 1 + g('area') / 100;
   r.projeteis = g('projeteis');

@@ -315,10 +315,10 @@ const PASSIVAS = [
   { id: 'p_impeto', secao: 'nucleo', nome: 'Ímpeto', desc: '+4% velocidade de ataque por rank', max: 3, stats: { velAtaque: 4 } },
   { id: 'p_couraca', secao: 'defensivo', nome: 'Couraça', desc: '+10% armadura por rank', max: 3, stats: { armaduraPct: 10 } },
   { id: 'p_resil', secao: 'defensivo', nome: 'Resiliência', desc: '+5% em todas as resistências por rank', max: 3, stats: { resTodas: 5 } },
-  { id: 'p_vigor', secao: 'defensivo', nome: 'Vigor', desc: '+0.4% de vida regenerada por segundo por rank', max: 3, stats: { regenVidaPct: 0.4 } },
+  { id: 'p_vigor', secao: 'defensivo', nome: 'Vigor', desc: '+30% de regeneração de vida dos itens por rank', max: 3, stats: { regenVidaMais: 30 } },
   { id: 'p_brut', secao: 'maestria', nome: 'Brutalidade', desc: '+12% dano crítico por rank', max: 3, stats: { danoCrit: 12 } },
   { id: 'p_ampl', secao: 'maestria', nome: 'Amplitude', desc: '+7% área de efeito por rank', max: 3, stats: { area: 7 } },
-  { id: 'p_fluxo', secao: 'maestria', nome: 'Fluxo', desc: '+12% regeneração de recurso por rank', max: 3, stats: { regenRecPct: 12 } },
+  { id: 'p_fluxo', secao: 'maestria', nome: 'Fluxo', desc: '+25% de regeneração de recurso dos itens por rank', max: 3, stats: { regenRecPct: 25 } },
   { id: 'p_sup1', secao: 'supremo', nome: 'Determinação', desc: '+8% redução de recarga por rank', max: 3, stats: { recarga: 8 } },
   { id: 'p_sup2', secao: 'supremo', nome: 'Celeridade', desc: '+4% velocidade de movimento por rank', max: 3, stats: { velMov: 4 } },
 ];
@@ -383,7 +383,7 @@ const STAT_NOMES = {
   velAtaque: v => `+${v}% de Velocidade de Ataque`, critChance: v => `+${v}% de Chance de Crítico`, danoCrit: v => `+${v}% de Dano Crítico`,
   resFogo: v => `+${v}% de Resistência a Fogo`, resFrio: v => `+${v}% de Resistência a Frio`, resRaio: v => `+${v}% de Resistência a Raio`, resVeneno: v => `+${v}% de Resistência a Veneno`, resTodas: v => `+${v}% em Todas as Resistências`,
   velMov: v => `+${v}% de Velocidade de Movimento`, roubo: v => `${v}% do Dano Causado Roubado como Vida`, regenVida: v => `+${v} de Vida Regenerada por Segundo`, regenVidaPct: v => `Regenera ${v}% da Vida por Segundo`,
-  regenRecPct: v => `+${v}% de Regeneração de Recurso`, forca: v => `+${v} de Força`, destreza: v => `+${v} de Destreza`, inteligencia: v => `+${v} de Inteligência`, atributos: v => `+${v} em Todos os Atributos`,
+  regenRecPct: v => `+${v}% de Regeneração de Recurso`, regenVidaMais: v => `+${v}% de Regeneração de Vida dos Itens`, forca: v => `+${v} de Força`, destreza: v => `+${v} de Destreza`, inteligencia: v => `+${v} de Inteligência`, atributos: v => `+${v} em Todos os Atributos`,
   recarga: v => `${v}% de Redução de Recarga`, area: v => `+${v}% de Área de Efeito`, bloqueio: v => `+${v}% de Chance de Bloqueio`, esquiva: v => `+${v}% de Chance de Esquiva`,
   vidaPorGolpe: v => `+${v} de Vida por Golpe`, projeteis: v => `+${v} Projétil(eis) Adicional(is)`, redDano: v => `${v}% de Redução de Dano`, espinhos: v => `Reflete ${v}% do Dano Corpo a Corpo`,
   ranks: v => `+${v} Rank em Todas as Habilidades Aprendidas`, efPocao: v => `+${v}% de Efeito dos Frascos`, curaAbate: v => `Cura ${v}% da Vida ao Abater`, lacaios: v => `+${v} Lacaio(s) Máximo(s)`,
@@ -422,7 +422,7 @@ const AFIXOS = [
   { id: 'area', tipo: 'suf', nome: 'da Vastidão', stat: 'area', slots: ['amuleto', 'offhand', 'elmo'], f: il => [5 + il * 0.1, 10 + il * 0.2] },
   { id: 'vpg', tipo: 'suf', nome: 'da Sanguessuga', stat: 'vidaPorGolpe', slots: ['arma', 'luvas', 'anel'], f: il => [1 + il * 0.1, 3 + il * 0.22] },
   { id: 'achado', tipo: 'suf', nome: 'do Saqueador', stat: 'achado', slots: ['elmo', 'botas', 'anel', 'amuleto', 'luvas'], f: il => [6 + il * 0.1, 14 + il * 0.25] },
-  { id: 'regRec', tipo: 'suf', nome: 'do Fluxo', stat: 'regenRecPct', slots: ['elmo', 'amuleto', 'anel', 'offhand', 'arma'], f: il => [8 + il * 0.15, 16 + il * 0.3] },
+  { id: 'regRec', tipo: 'suf', nome: 'do Fluxo', stat: 'regenRecPct', slots: ['elmo', 'amuleto', 'anel', 'offhand', 'arma'], f: il => [15 + il * 0.3, 30 + il * 0.6] },
 ];
 
 const NOMES_RAROS_A = ['Agouro', 'Presságio', 'Lamento', 'Tormenta', 'Carniça', 'Ruína', 'Vigília', 'Abismo', 'Cinza', 'Sombra', 'Cripta', 'Fúria', 'Maldição', 'Eclipse', 'Uivo', 'Espinho', 'Brasa', 'Geada', 'Trovão', 'Sina', 'Pesar', 'Martírio', 'Sangue', 'Osso'];

@@ -139,13 +139,16 @@ ENG.construirMundo = function (biomaId, seed, opcoes = {}) {
   const R = criarRuido(seed);
   const rnd = R.rnd;
   // o terreno vai bem além da área jogável para o horizonte nunca mostrar o vazio
-  const AREA = 150;
-  const TAM = 440, N = 411, cel = TAM / (N - 1), meio = TAM / 2;
-  // --- caminho ---
+  // zonas de combate são grandes (caminho em serpentina com ramos); cidades e o fundo do menu, menores
+  const grande = !opcoes.cidade && !opcoes.pequeno;
+  const AREA = grande ? 250 : 150;
+  const TAM = grande ? 640 : 440, N = grande ? 541 : 411, cel = TAM / (N - 1), meio = TAM / 2;
+  // --- caminhos ---
   let pts = [];
+  const ramosBase = [];
   if (opcoes.cidade) {
     pts = [{ x: -24, z: 0, w: 15 }, { x: -8, z: 0, w: 20 }, { x: 8, z: 0, w: 20 }, { x: 22, z: 0, w: 14 }, { x: 38, z: 0, w: 7 }, { x: 50, z: 0, w: 7.5 }];
-  } else {
+  } else if (!grande) {
     let x = -AREA + 22, z = (rnd() - 0.5) * 80;
     const passos = 15;
     const dx = (AREA * 2 - 44) / passos;
@@ -153,41 +156,94 @@ ENG.construirMundo = function (biomaId, seed, opcoes = {}) {
       pts.push({ x, z, w: 7.5 + rnd() * 3.5 });
       x += dx; z += (rnd() - 0.5) * 55; z = clamp(z, -AREA + 40, AREA - 40);
     }
-    // clareiras
     for (let i = 2; i < pts.length - 2; i += 2 + Math.floor(rnd() * 2)) pts[i].w = 15 + rnd() * 6;
     pts[0].w = 13; pts[pts.length - 1].w = opcoes.chefe ? 26 : 16;
+  } else {
+    // caminho principal em serpentina: 2 ou 3 faixas separadas por morros
+    const nLin = rnd() < 0.55 ? 3 : 2;
+    const sep = nLin === 3 ? AREA * 0.62 : AREA * 0.9;
+    const z0 = -(nLin - 1) / 2 * sep + (rnd() - 0.5) * 16;
+    const xa = -AREA + 28, xb = AREA - 28;
+    for (let r = 0; r < nLin; r++) {
+      const zr = z0 + r * sep, ida = r % 2 === 0, passos = 13;
+      for (let i = 0; i <= passos; i++) {
+        const t = i / passos, x = ida ? lerp(xa, xb, t) : lerp(xb, xa, t);
+        const amp = (i === 0 || i === passos) ? 6 : 30;
+        pts.push({ x: x + (rnd() - 0.5) * 8, z: clamp(zr + (rnd() - 0.5) * amp, -AREA + 22, AREA - 22), w: 7.5 + rnd() * 3.5, lin: r });
+      }
+      // curva até a próxima faixa
+      if (r < nLin - 1) { const xe = ida ? xb : xa; pts.push({ x: xe + (ida ? -1 : 1) * rnd() * 10, z: zr + sep * 0.5 + (rnd() - 0.5) * 14, w: 9 + rnd() * 3, lin: -1 }); }
+    }
+    for (let i = 2; i < pts.length - 2; i += 2 + Math.floor(rnd() * 2)) pts[i].w = 15 + rnd() * 6;
+    pts[0].w = 13; pts[pts.length - 1].w = opcoes.chefe ? 26 : 16;
+    // ramos laterais terminando em locais especiais (tesouro, santuário, covil)
+    const nRamos = 4 + Math.floor(rnd() * 4);
+    const tipos = ['tesouro', 'santuario', 'covil'];
+    const usados = [];
+    for (let k = 0; k < nRamos * 6 && ramosBase.length < nRamos; k++) {
+      const i = 3 + Math.floor(rnd() * (pts.length - 6));
+      const a = pts[i];
+      if (a.lin < 0 || Math.abs(a.x) > AREA - 70 || usados.some(u => Math.abs(u - i) < 3)) continue;
+      const lado = rnd() < 0.5 ? -1 : 1;
+      const zr = z0 + a.lin * sep;
+      const externo = (lado < 0 && a.lin === 0) || (lado > 0 && a.lin === nLin - 1);
+      const espaco = externo ? (lado < 0 ? zr + AREA : AREA - zr) - 20 : sep / 2 - 17;
+      const comp = Math.min(espaco - 2, 36 + rnd() * 26);
+      if (comp < 24) continue;
+      usados.push(i);
+      let dx = (rnd() - 0.5) * 0.9, dz = lado; const L = Math.hypot(dx, dz); dx /= L; dz /= L;
+      const pr = [{ x: a.x, z: a.z, w: 7 }];
+      for (const f of [0.35, 0.7]) pr.push({ x: a.x + dx * comp * f + (rnd() - 0.5) * 8, z: a.z + dz * comp * f, w: 6.5 + rnd() * 1.5 });
+      pr.push({ x: clamp(a.x + dx * comp, -AREA + 18, AREA - 18), z: clamp(a.z + dz * comp, -AREA + 18, AREA - 18), w: 12 + rnd() * 3 });
+      ramosBase.push({ pts: pr, tipo: tipos[ramosBase.length % 3 === 0 ? 0 : Math.floor(rnd() * 3)], tA: i / (pts.length - 1) });
+    }
   }
   // suavizar (Chaikin)
-  let cam = pts;
-  for (let k = 0; k < 2; k++) {
-    const nv = [cam[0]];
-    for (let i = 0; i < cam.length - 1; i++) {
-      const a = cam[i], b = cam[i + 1];
-      nv.push({ x: a.x * 0.75 + b.x * 0.25, z: a.z * 0.75 + b.z * 0.25, w: a.w * 0.75 + b.w * 0.25 });
-      nv.push({ x: a.x * 0.25 + b.x * 0.75, z: a.z * 0.25 + b.z * 0.75, w: a.w * 0.25 + b.w * 0.75 });
+  const suavizar = (lista) => {
+    let c = lista;
+    for (let k = 0; k < 2; k++) {
+      const nv = [c[0]];
+      for (let i = 0; i < c.length - 1; i++) {
+        const a = c[i], b = c[i + 1];
+        nv.push({ x: a.x * 0.75 + b.x * 0.25, z: a.z * 0.75 + b.z * 0.25, w: a.w * 0.75 + b.w * 0.25 });
+        nv.push({ x: a.x * 0.25 + b.x * 0.75, z: a.z * 0.25 + b.z * 0.75, w: a.w * 0.25 + b.w * 0.75 });
+      }
+      nv.push(c[c.length - 1]); c = nv;
     }
-    nv.push(cam[cam.length - 1]); cam = nv;
-  }
-  // garantir clareira no fim
+    return c;
+  };
+  const cam = suavizar(pts);
+  const ramos = ramosBase.map(r => ({ caminho: suavizar(r.pts), tipo: r.tipo, fim: { x: r.pts[r.pts.length - 1].x, z: r.pts[r.pts.length - 1].z, r: r.pts[r.pts.length - 1].w } }));
   const fim = pts[pts.length - 1], ini = pts[0];
-  // --- campos ---
-  const borda = new Float32Array(N * N); // distância com sinal até a borda (negativo = andável)
+  // --- campos: distância até a borda andável (negativo = andável) ---
+  // cada trecho só atualiza as células ao seu redor (rápido mesmo em mapas grandes)
+  const LIM = 95;
+  const borda = new Float32Array(N * N).fill(LIM);
   const alt = new Float32Array(N * N);
   const tParam = new Float32Array(N * N);
+  const segs = [];
+  for (let s = 0; s < cam.length - 1; s++) segs.push([cam[s], cam[s + 1], s / (cam.length - 1), (s + 1) / (cam.length - 1)]);
+  ramos.forEach((r, k) => { const c = r.caminho; for (let s = 0; s < c.length - 1; s++) segs.push([c[s], c[s + 1], ramosBase[k].tA, ramosBase[k].tA]); });
+  for (const [a, b, t0, t1] of segs) {
+    const mg = Math.max(a.w, b.w) + LIM;
+    const i0 = Math.max(0, Math.floor((Math.min(a.x, b.x) - mg + meio) / cel)), i1 = Math.min(N - 1, Math.ceil((Math.max(a.x, b.x) + mg + meio) / cel));
+    const j0 = Math.max(0, Math.floor((Math.min(a.z, b.z) - mg + meio) / cel)), j1 = Math.min(N - 1, Math.ceil((Math.max(a.z, b.z) + mg + meio) / cel));
+    const vx = b.x - a.x, vz = b.z - a.z, L2 = vx * vx + vz * vz || 1e-6;
+    for (let j = j0; j <= j1; j++) {
+      const pz = -meio + j * cel;
+      for (let i = i0; i <= i1; i++) {
+        const px = -meio + i * cel;
+        let t = ((px - a.x) * vx + (pz - a.z) * vz) / L2; t = t < 0 ? 0 : t > 1 ? 1 : t;
+        const d = Math.hypot(px - a.x - vx * t, pz - a.z - vz * t) - (a.w + (b.w - a.w) * t);
+        const idx = j * N + i;
+        if (d < borda[idx]) { borda[idx] = d; tParam[idx] = t0 + (t1 - t0) * t; }
+      }
+    }
+  }
+  // pontas arredondadas e irregularidade da borda
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
     const px = -meio + i * cel, pz = -meio + j * cel;
-    let melhor = 1e9, tm = 0;
-    for (let s = 0; s < cam.length - 1; s++) {
-      const a = cam[s], b = cam[s + 1];
-      const vx = b.x - a.x, vz = b.z - a.z; const L2 = vx * vx + vz * vz;
-      let t = ((px - a.x) * vx + (pz - a.z) * vz) / L2; t = clamp(t, 0, 1);
-      const cx = a.x + vx * t, cz = a.z + vz * t;
-      const d = Math.hypot(px - cx, pz - cz) - (a.w + (b.w - a.w) * t);
-      if (d < melhor) { melhor = d; tm = (s + t) / (cam.length - 1); }
-    }
-    // pontas arredondadas e irregularidade da borda
-    melhor += R.fbm(px * 0.06 + 11, pz * 0.06 - 4, 3) * (opcoes.cidade ? 1.2 : 3.2);
-    borda[j * N + i] = melhor; tParam[j * N + i] = tm;
+    borda[j * N + i] += R.fbm(px * 0.06 + 11, pz * 0.06 - 4, 3) * (opcoes.cidade ? 1.2 : 3.2);
   }
   const relevo = B.relevo;
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
@@ -216,13 +272,15 @@ ENG.construirMundo = function (biomaId, seed, opcoes = {}) {
   }
   // aplainar início e fim
   const aplainar = (cx, cz, r) => {
-    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const i0 = Math.max(0, Math.floor((cx - r + meio) / cel)), i1 = Math.min(N - 1, Math.ceil((cx + r + meio) / cel));
+    const j0 = Math.max(0, Math.floor((cz - r + meio) / cel)), j1 = Math.min(N - 1, Math.ceil((cz + r + meio) / cel));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
       const px = -meio + i * cel, pz = -meio + j * cel; const d = Math.hypot(px - cx, pz - cz);
       if (d < r) { const k = smooth(r, r * 0.6, d); const idx = j * N + i; alt[idx] = lerp(alt[idx], Math.max(0.4, B.aguaNivel + 0.6), k * 0.8); }
     }
   };
   if (opcoes.cidade) { aplainar(0, 0, 31); aplainar(40, 0, 13); }
-  else { aplainar(fim.x, fim.z, fim.w * 0.9); aplainar(ini.x, ini.z, 10); }
+  else { aplainar(fim.x, fim.z, fim.w * 0.9); aplainar(ini.x, ini.z, 10); for (const r of ramos) aplainar(r.fim.x, r.fim.z, r.fim.r * 0.8); }
 
   const amostra = (arr, x, z) => {
     const fx = clamp((x + meio) / cel, 0, N - 1.001), fz = clamp((z + meio) / cel, 0, N - 1.001);
@@ -231,7 +289,7 @@ ENG.construirMundo = function (biomaId, seed, opcoes = {}) {
     return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
   };
   const mundo = {
-    bioma: biomaId, B, TAM, meio, R, caminho: cam, pontos: pts, inicio: { x: ini.x, z: ini.z }, fim: { x: fim.x, z: fim.z, r: fim.w },
+    bioma: biomaId, B, TAM, meio, R, caminho: cam, pontos: pts, ramos, inicio: { x: ini.x, z: ini.z }, fim: { x: fim.x, z: fim.z, r: fim.w },
     h: (x, z) => amostra(alt, x, z),
     borda: (x, z) => amostra(borda, x, z),
     progresso: (x, z) => amostra(tParam, x, z),
@@ -464,7 +522,7 @@ function construirDecoracao(mundo, rnd) {
   if (!DECOR.rocha) initDecor();
   const lista = mundo.B.decor;
   const porTipo = {};
-  const tentativas = mundo.cidade ? 2400 : 5200;
+  const tentativas = mundo.cidade ? 2400 : Math.round(5200 * Math.pow(mundo.TAM / 440, 2));
   for (let n = 0; n < tentativas; n++) {
     const x = (rnd() - 0.5) * mundo.TAM * 0.94, z = (rnd() - 0.5) * mundo.TAM * 0.94;
     const e = mundo.borda(x, z);

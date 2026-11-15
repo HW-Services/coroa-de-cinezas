@@ -123,6 +123,7 @@ J.entrarDef = function (def, chegada = 'inicio', opcoes = {}) {
   J.estado = 'jogando';
   J.missaoAoEntrar(def.id, anterior);
   UI.aoEntrarZona(def);
+  if (!def.cidade && def.nivel > p.nivel + 1) setTimeout(() => UI.aviso(`Área perigosa: nível ${def.nivel} (você é nível ${p.nivel}). Os monstros resistem mais e batem mais forte.`, '#ff9060'), 1200);
   J.salvar();
 };
 
@@ -181,6 +182,19 @@ J.montarZona = function (def) {
     if (!m.andavel(x, z, 1.5)) { x = c.x; z = c.z; }
     J.addPassagem(x, z, def.id);
     P.passagem = { x, z };
+  }
+  // locais especiais no fim dos ramos laterais
+  for (const r of (m.ramos || [])) {
+    const x = r.fim.x, z = r.fim.z;
+    if (r.tipo === 'tesouro') {
+      const mesh = EST.bau(x, z, Math.random() * 6.28);
+      m.obst.push({ x, z, r: 1.1 });
+      J.interativos.push({ tipo: 'tesouro', x, z, mesh, nome: 'Baú do Tesouro', altura: 1.6, acao: () => J.abrirTesouro(x, z) });
+    } else if (r.tipo === 'santuario') {
+      const mesh = EST.objetivo(x, z, 'Santuário de Cristal');
+      m.obst.push({ x, z, r: 1.3 });
+      J.interativos.push({ tipo: 'santuario', x, z, mesh, nome: 'Santuário', altura: 3, acao: () => J.usarSantuario(x, z) });
+    }
   }
   // objetivos de missões ativas
   for (const ms of MISSOES) {
@@ -303,7 +317,7 @@ J.atualizarMundo = function (dt) {
     } else if (it.tipo === 'dispositivo') {
       const u = it.mesh.userData; u.roda.rotation.y += dt * 0.5; u.roda.rotation.x = Math.sin(t * 0.4) * 0.3;
       u.nucleo.material.emissiveIntensity = J.pers.mapaMax > 0 ? 2.6 + Math.sin(t * 3) * 0.6 : 0.3;
-    } else if (it.tipo === 'objetivo') {
+    } else if (it.tipo === 'objetivo' || it.tipo === 'santuario') {
       it.mesh.userData.joia.rotation.y += dt * 1.5; it.mesh.userData.joia.position.y = 2.2 + Math.sin(t * 2) * 0.15;
     } else if (it.tipo === 'portal') {
       it.mesh.userData.anel.rotation.z += dt; it.mesh.userData.disco.material.opacity = 0.45 + Math.sin(t * 4) * 0.12;
@@ -330,6 +344,44 @@ J.abrirPortal = function () {
   if (J.z.def.id === 'z15' && J.pers.mapaMax < 1) { J.pers.mapaMax = 1; UI.aviso('O Atlas dos Mapas despertou! Use o Dispositivo de Mapas na cidade.', '#ffd23a'); }
   else UI.aviso('A passagem adiante se abriu.');
   J.salvar();
+};
+
+// baú de tesouro: abre depois que os guardas caem
+J.abrirTesouro = function (x, z) {
+  const it = J.interativos.find(i => i.tipo === 'tesouro' && i.x === x && i.z === z); if (!it) return;
+  const vivos = J.inimigos.filter(e => !e.morto && Math.hypot(e.x - x, e.z - z) < 12).length;
+  if (vivos) { UI.aviso('Derrote os guardiões do tesouro primeiro', '#ff9080'); return; }
+  J.interativos.splice(J.interativos.indexOf(it), 1);
+  const y = J.mundo.h(x, z);
+  ENG.coluna(x, y, z, '#ffd060', 8, 1.2, 1); ENG.particulas.emitir({ x, y: y + 1, z, n: 60, cor: '#ffe080', vel: 6, vida: 1, tam: 0.4, sobe: 2 });
+  const nivel = J.z.nivel + 1, bonus = J.st.achado + J.z.quant + 120;
+  const n = 2 + (Math.random() < 0.5 ? 1 : 0);
+  for (let i = 0; i < n; i++) J.soltar(IT.gerar(nivel, { classe: J.pers.classe, bonus, minimo: i === 0 ? 'raro' : 'magico' }), x, z);
+  if (Math.random() < 0.6) J.soltar(IT.gerarGema(nivel), x, z);
+  if (Math.random() < 0.08) J.soltar(IT.gerar(nivel, { classe: J.pers.classe, raridade: 'unico' }), x, z);
+  const ouro = Math.round((20 + nivel * 6) * (1 + Math.random()));
+  J.soltar({ uid: IT.uid(), tipo: 'ouro', quantia: ouro, nome: ouro + ' Ouro', raridade: 'ouro' }, x, z);
+  it.mesh.rotation.z = 0.05; UI.aviso('Tesouro encontrado!', '#ffd060');
+};
+// santuário: bênção temporária
+const BENCAOS = [
+  { nome: 'Fúria Ancestral', stats: { danoPct: 35 }, cor: '#ff6040' },
+  { nome: 'Pés de Vento', stats: { velMov: 30, velAtaque: 20 }, cor: '#80ffc0' },
+  { nome: 'Pele de Pedra', stats: { redDano: 25, armaduraPct: 60 }, cor: '#c0b090' },
+  { nome: 'Olho do Caçador', stats: { critChance: 15, danoCrit: 60 }, cor: '#ffe060' },
+  { nome: 'Vigor Sagrado', stats: { regenVidaPct: 3, vidaPct: 20 }, cor: '#ff80a0' },
+];
+J.usarSantuario = function (x, z) {
+  const it = J.interativos.find(i => i.tipo === 'santuario' && i.x === x && i.z === z); if (!it) return;
+  J.interativos.splice(J.interativos.indexOf(it), 1);
+  const b = BENCAOS[Math.floor(Math.random() * BENCAOS.length)];
+  J.buffs = J.buffs.filter(x => x.id !== 'santuario');
+  J.buffs.push({ id: 'santuario', nome: b.nome, icone: '✦', stats: b.stats, t: 60, dur: 60, cor: b.cor });
+  J.recalc();
+  const y = J.mundo.h(x, z);
+  ENG.coluna(x, y, z, b.cor, 14, 2, 1.4); ENG.particulas.emitir({ x, y: y + 2, z, n: 80, cor: b.cor, vel: 7, vida: 1.1, tam: 0.45, sobe: 2 });
+  it.mesh.userData.feixe.visible = false; it.mesh.userData.mat.emissiveIntensity = 0.4;
+  UI.aviso(`Santuário: ${b.nome} por 60 segundos!`, b.cor);
 };
 
 J.ativarObjetivo = function (id) {

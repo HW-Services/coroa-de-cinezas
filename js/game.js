@@ -104,28 +104,38 @@ J.carregarZona = function (def) {
 
 J.gerarInimigos = function () {
   const def = J.z.def, m = J.mundo;
-  const cam = m.caminho;
-  let comp = 0; const segs = [];
-  for (let i = 0; i < cam.length - 1; i++) { const L = Math.hypot(cam[i + 1].x - cam[i].x, cam[i + 1].z - cam[i].z); segs.push({ a: cam[i], b: cam[i + 1], L, s0: comp }); comp += L; }
-  const ponto = (s) => { for (const sg of segs) if (s <= sg.s0 + sg.L) { const t = (s - sg.s0) / sg.L; return { x: lerp(sg.a.x, sg.b.x, t), z: lerp(sg.a.z, sg.b.z, t), w: lerp(sg.a.w, sg.b.w, t) }; } const u = cam[cam.length - 1]; return { x: u.x, z: u.z, w: u.w }; };
   const dens = (def.densidade || 1) * (J.z.mods.some(x => x.id === 'mDens') ? 1.3 : 1);
   const raros = J.z.mods.some(x => x.id === 'mRaros') ? 2 : 1;
-  const fimLivre = def.chefe ? 30 : 8;
-  for (let s = 28; s < comp - fimLivre; s += 13 / dens) {
-    const c = ponto(s);
-    if (RNG.chance(0.15)) continue;
+  const grande = (m.AREA || 150) > 200;
+  // um grupo de monstros em torno de um ponto do caminho
+  const grupo = (c, forcar) => {
     const tipo = RNG.pick(def.inimigos);
     let n = RNG.int(3, 6);
-    let rarPack = 'normal';
-    const r = Math.random();
-    if (r < 0.07 * raros) rarPack = 'raro'; else if (r < 0.2 * raros) rarPack = 'magico';
+    let rarPack = forcar || 'normal';
+    if (!forcar) { const r = Math.random(); if (r < 0.07 * raros) rarPack = 'raro'; else if (r < 0.2 * raros) rarPack = 'magico'; }
     if (INIMIGOS[tipo].escala > 1.4) n = Math.max(1, Math.floor(n / 2));
     for (let i = 0; i < n; i++) {
       let x = c.x + (Math.random() - 0.5) * c.w * 1.1, z = c.z + (Math.random() - 0.5) * c.w * 1.1;
       if (!m.andavel(x, z, 1)) { x = c.x; z = c.z; }
-      const rr = rarPack === 'raro' ? (i === 0 ? 'raro' : 'normal') : rarPack;
+      const rr = rarPack === 'raro' ? (i === 0 ? 'raro' : 'magico') : rarPack;
       J.criarInimigo(i > 0 && RNG.chance(0.3) ? RNG.pick(def.inimigos) : tipo, x, z, J.z.nivel + (RNG.chance(0.2) ? 1 : 0), rr);
     }
+  };
+  // percorre um caminho distribuindo grupos
+  const percorrer = (cam, livreIni, livreFim, passo) => {
+    let comp = 0; const segs = [];
+    for (let i = 0; i < cam.length - 1; i++) { const L = Math.hypot(cam[i + 1].x - cam[i].x, cam[i + 1].z - cam[i].z); segs.push({ a: cam[i], b: cam[i + 1], L, s0: comp }); comp += L; }
+    const ponto = (s) => { for (const sg of segs) if (s <= sg.s0 + sg.L) { const t = (s - sg.s0) / sg.L; return { x: lerp(sg.a.x, sg.b.x, t), z: lerp(sg.a.z, sg.b.z, t), w: lerp(sg.a.w, sg.b.w, t) }; } const u = cam[cam.length - 1]; return { x: u.x, z: u.z, w: u.w }; };
+    for (let s = livreIni; s < comp - livreFim; s += passo) { if (RNG.chance(0.15)) continue; grupo(ponto(s)); }
+  };
+  percorrer(m.caminho, 28, def.chefe ? 30 : 8, (grande ? 17 : 13) / dens);
+  // ramos laterais e seus locais especiais
+  for (const r of (m.ramos || [])) {
+    percorrer(r.caminho, 16, 14, 16 / dens);
+    const f = { x: r.fim.x, z: r.fim.z, w: r.fim.r * 0.7 };
+    if (r.tipo === 'tesouro') grupo(f, 'raro');
+    else if (r.tipo === 'covil') { grupo(f, 'raro'); grupo({ x: f.x + 3, z: f.z - 3, w: f.w }, 'raro'); }
+    else grupo(f, 'magico');
   }
   if (def.chefe) {
     const f = m.fim;
@@ -141,10 +151,10 @@ J.criarInimigo = function (tipo, x, z, nivel, rar = 'normal', extra = {}) {
   const esc = d.escala * (extra.escala || 1) * (rar === 'raro' ? 1.18 : rar === 'magico' ? 1.06 : 1);
   const m = (d.modelo3d && MOD.criar3D(d.modelo3d, esc, d.tinta3d)) || MOD.criar(d.rig, d.visual, esc);
   const multR = rar === 'raro' ? 3.6 : rar === 'magico' ? 1.7 : 1;
-  const vidaMax = 26 * d.vida * escalaVida(nivel) * multR * J.z.multVida * (extra.vida || 1);
+  const vidaMax = 26 * 1.35 * d.vida * escalaVida(nivel) * multR * J.z.multVida * (extra.vida || 1);
   const e = {
     tipo, d, m, x, z, y: J.mundo.h(x, z), ang: Math.random() * 6.28, nivel, rar, vida: vidaMax, vidaMax,
-    dano: 5 * d.dano * escalaDano(nivel) * (rar === 'raro' ? 1.3 : rar === 'magico' ? 1.15 : 1) * J.z.multDano,
+    dano: 5 * 1.3 * d.dano * escalaDano(nivel) * (rar === 'raro' ? 1.3 : rar === 'magico' ? 1.15 : 1) * J.z.multDano,
     vel: d.vel * J.z.multVel * (0.9 + Math.random() * 0.2), alcance: d.alcance, raio: 0.45 * esc, estado: 'dormindo', cd: Math.random() * 1.5,
     atq: null, fase: Math.random() * 6, t: Math.random() * 10, flash: 0, lentoT: 0, lentoF: 0, dots: [], mods: [], morto: false, mortoT: 0,
     pequeno: !!extra.pequeno, invocado: !!extra.invocado, strafe: Math.random() < 0.5 ? 1 : -1,
@@ -170,10 +180,10 @@ J.criarInimigo = function (tipo, x, z, nivel, rar = 'normal', extra = {}) {
 J.criarChefe = function (id, x, z, nivel) {
   const c = CHEFES[id];
   const m = (c.modelo3d && MOD.criar3D(c.modelo3d, c.escala, c.tinta3d)) || MOD.criar(c.rig, {}, c.escala);
-  const vida = 22 * c.vida * escalaVida(nivel) * J.z.multVida * (J.z.mods.some(x => x.id === 'mChefe') ? 1.5 : 1);
+  const vida = 22 * 1.35 * c.vida * escalaVida(nivel) * J.z.multVida * (J.z.mods.some(x => x.id === 'mChefe') ? 1.5 : 1);
   const e = {
     tipo: id, d: { nome: c.nome, ia: 'chefe', elem: c.elem, alcance: 3.2 * c.escala / 2.5 + 1.5, rig: c.rig }, c, m, x, z, y: J.mundo.h(x, z), ang: -Math.PI / 2, nivel, rar: 'chefe',
-    vida, vidaMax: vida, dano: 6 * c.dano * escalaDano(nivel) * J.z.multDano, vel: c.vel, alcance: 3.2, raio: 0.42 * c.escala, estado: 'dormindo', cd: 2,
+    vida, vidaMax: vida, dano: 6 * 1.3 * c.dano * escalaDano(nivel) * J.z.multDano, vel: c.vel, alcance: 3.2, raio: 0.42 * c.escala, estado: 'dormindo', cd: 2,
     atq: null, fase: 0, t: 0, flash: 0, lentoT: 0, lentoF: 0, dots: [], mods: [], morto: false, mortoT: 0, nome: c.nome,
     boss: { fase: 1, cdHab: 2.5, ultima: null, invulnT: 0, acao: null },
   };
@@ -204,6 +214,15 @@ J.agendar = function (t, fn) { J.agendados.push({ t, fn }); };
 // ------------------------------------------------------------
 // Dano
 // ------------------------------------------------------------
+// diferença de nível: área acima do personagem deixa os monstros mais duros e mais perigosos
+J.fatorNivelAtaque = function (nivelMonstro) {
+  const dif = nivelMonstro - J.pers.nivel;
+  return dif > 0 ? Math.max(0.3, Math.pow(0.88, dif)) : Math.min(1.25, 1 + 0.025 * -dif);
+};
+J.fatorNivelDefesa = function (nivelMonstro) {
+  const dif = nivelMonstro - J.pers.nivel;
+  return dif > 0 ? Math.min(2.5, 1 + 0.09 * dif) : Math.max(0.6, 1 - 0.03 * -dif);
+};
 J.danoBase = function () { const [a, b] = J.st.dano; return a + Math.random() * (b - a); };
 
 J.acertarInimigo = function (e, mult, sk, o = {}) {
@@ -217,6 +236,7 @@ J.acertarInimigo = function (e, mult, sk, o = {}) {
   const crit = Math.random() * 100 < critC;
   if (crit) d *= 1 + st.danoCrit / 100;
   if (e.rar === 'chefe') d *= 0.9;
+  d *= J.fatorNivelAtaque(e.nivel);
   d = Math.max(1, d);
   e.vida -= d; e.flash = 1; if (e.estado === 'dormindo') J.acordar(e);
   const cabY = e.y + (e.m.alturaCabeca || 1.8) * e.m.escala;
@@ -244,8 +264,8 @@ J.danoJogador = function (qtd, elem = 'fisico', fonte = null) {
   const st = J.st;
   if (Math.random() * 100 < st.esquiva) { J.texto(jg.x, jg.y + 2.2, jg.z, 'Esquiva', '#c0ffc0', 14); return; }
   if (Math.random() * 100 < st.bloqueio) { J.texto(jg.x, jg.y + 2.2, jg.z, 'Bloqueio', '#d0d8ff', 14); ENG.particulas.emitir({ x: jg.x, y: jg.y + 1.2, z: jg.z, n: 8, cor: '#c0d0ff', vel: 4, vida: 0.3, tam: 0.3 }); return; }
-  let d = qtd;
-  if (elem === 'fisico') { const red = Math.min(0.85, st.armadura / (st.armadura + 8 * qtd + 20)); d *= 1 - red; }
+  let d = qtd * J.fatorNivelDefesa(fonte && fonte.nivel != null ? fonte.nivel : (J.z ? J.z.nivel : J.pers.nivel));
+  if (elem === 'fisico') { const red = Math.min(0.85, st.armadura / (st.armadura + 8 * d + 20)); d *= 1 - red; }
   else d *= 1 - (st.res[elem] || 0) / 100;
   d *= 1 - st.redDano / 100;
   d = Math.max(1, d);
@@ -1010,9 +1030,11 @@ J.atualizarInimigo = function (e, dt) {
       let dx = alvoX - e.x, dz = alvoZ - e.z; const L = Math.hypot(dx, dz) || 1; dx /= L; dz /= L;
       if (quer < 0) { dx = -dx; dz = -dz; }
       else if (quer < 1) { const t = dx; dx = -dz * e.strafe; dz = t * e.strafe; if (Math.random() < dt * 0.4) e.strafe *= -1; }
-      if (J.mover(e, dx * vel * dt * Math.abs(quer > 0 ? Math.min(1, quer + 0.3) : 1), dz * vel * dt, e.raio)) movendo = 1;
+      const kv = quer < 0 ? 0.55 : Math.min(1, quer + 0.3);
+      if (J.mover(e, dx * vel * dt * kv, dz * vel * dt * kv, e.raio)) movendo = quer < 0 ? 0.6 : 1;
       else e.strafe *= -1;
-      e.ang += angDif(quer < 0 ? yawPara(dx, dz) : angAlvo, e.ang) * (1 - Math.exp(-dt * 8));
+      // sempre de frente para o alvo (recua dando passos para trás)
+      e.ang += angDif(angAlvo, e.ang) * (1 - Math.exp(-dt * 8));
       e.fase += dt * vel * 1.6;
     } else e.ang += angDif(angAlvo, e.ang) * (1 - Math.exp(-dt * 6));
   }

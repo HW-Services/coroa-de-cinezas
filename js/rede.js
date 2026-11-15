@@ -69,7 +69,7 @@ REDE.carregarPerfil = async function () {
 };
 
 REDE.esconderTelas = function () { for (const id of ['#telaInicio', '#telaClasse', '#telaRede']) { const e = $r(id); if (e) e.hidden = true; } };
-REDE.fundo = function () { J.estado = 'menu'; if (!J.mundo) { ENG.construirMundo('litoral', 42, { chefe: false }); J.fundo = true; } };
+REDE.fundo = function () { J.estado = 'menu'; if (!J.mundo) { ENG.construirMundo('litoral', 42, { chefe: false, pequeno: true }); J.fundo = true; } };
 REDE.tela = function (html) {
   REDE.esconderTelas();
   const t = $r('#telaRede'); t.innerHTML = `<div><div class="logo">Coroa de Cinzas</div><div class="sublogo">Um RPG de ação sombrio</div></div>` + html; t.hidden = false;

@@ -631,6 +631,8 @@ UI.desenharMinimapa = function () {
     else if (it.tipo === 'npc') { const mk = J.marcadorNpc(it.id); g.fillStyle = mk === '!' || mk === '?' ? '#ffd23a' : '#e0d0b0'; g.beginPath(); g.arc(x, y, 3.5, 0, 7); g.fill(); }
     else if (it.tipo === 'objetivo') { g.fillStyle = '#40ffd0'; g.beginPath(); g.arc(x, y, 5, 0, 7); g.fill(); }
     else if (it.tipo === 'portal') { g.fillStyle = '#9080ff'; g.beginPath(); g.arc(x, y, 4.5, 0, 7); g.fill(); }
+    else if (it.tipo === 'tesouro') { g.fillStyle = '#ffc840'; g.fillRect(x - 4, y - 3, 8, 6); g.strokeStyle = '#000'; g.strokeRect(x - 4, y - 3, 8, 6); }
+    else if (it.tipo === 'santuario') { g.fillStyle = '#b080ff'; g.beginPath(); g.moveTo(x, y - 6); g.lineTo(x + 4, y); g.lineTo(x, y + 6); g.lineTo(x - 4, y); g.closePath(); g.fill(); }
     else { g.fillStyle = '#c0a060'; g.fillRect(x - 3, y - 3, 6, 6); }
   }
   // jogador
@@ -814,7 +816,7 @@ UI.telaInicio = function () {
     $('#bContinuarJogo').hidden = false;
   } else { $('#saveInfo').textContent = 'Os mortos não descansam no litoral naufragado.'; $('#bContinuarJogo').hidden = true; }
   // cenário de fundo
-  if (!J.mundo) { ENG.construirMundo('litoral', 42, { chefe: false }); J.fundo = true; }
+  if (!J.mundo) { ENG.construirMundo('litoral', 42, { chefe: false, pequeno: true }); J.fundo = true; }
 };
 UI.telaClasse = function () {
   $('#telaInicio').hidden = true; $('#telaClasse').hidden = false;
