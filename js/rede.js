@@ -87,7 +87,7 @@ REDE.entrada = async function () {
 // --- login / cadastro / senha ---
 REDE.telaLogin = function (modo) {
   modo = modo || 'entrar';
-  const abas = `<div class="rAbas"><button class="rAba${modo === 'entrar' ? ' on' : ''}" data-m="entrar">Entrar</button><button class="rAba${modo === 'criar' ? ' on' : ''}" data-m="criar">Criar conta</button></div>`;
+  const abas = `<div class="rAbas"><button type="button" class="rAba${modo === 'entrar' ? ' on' : ''}" data-m="entrar">Entrar</button><button type="button" class="rAba${modo === 'criar' ? ' on' : ''}" data-m="criar">Criar conta</button></div>`;
   let corpo = '';
   if (modo === 'entrar') corpo = `
     <label>E-mail<input id="rEmail" type="email" autocomplete="email" required></label>

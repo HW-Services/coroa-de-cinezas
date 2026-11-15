@@ -47,9 +47,12 @@ MP.trocarArea = function (areaId) {
   const ch = REDE.sb.channel(nome, { config: { broadcast: { self: false }, presence: { key: REDE.perfil.id + ':' + MP.tab } } });
   ch.on('broadcast', { event: 'e' }, ({ payload }) => MP.receber(payload))
     .on('broadcast', { event: 'chat' }, ({ payload }) => MP.receberChat(payload))
+    .on('broadcast', { event: 'co' }, ({ payload }) => { if (window.COOP) COOP.receber(payload); })
+    .on('presence', { event: 'sync' }, () => { if (window.COOP) COOP.aoPresenca(ch, ch.presenceState()); })
     .on('presence', { event: 'leave' }, ({ key }) => MP.saiu(key))
-    .subscribe((st) => { if (st === 'SUBSCRIBED' && MP.sala === ch) { ch.track({ u: REDE.perfil.id }).catch(() => {}); MP.enviar(true); } });
+    .subscribe((st) => { if (st === 'SUBSCRIBED' && MP.sala === ch) { ch.track({ u: REDE.perfil.id, k: REDE.perfil.id + ':' + MP.tab, t: window.COOP ? COOP.tEntrada : Date.now() }).catch(() => {}); MP.enviar(true); } });
   MP.sala = ch;
+  if (window.COOP) COOP.novaSala(ch);
 };
 
 MP.estadoLocal = function () {
@@ -75,7 +78,7 @@ MP.enviar = function (forcar) {
   const e = MP.estadoLocal(); if (!e) return;
   const ks = JSON.stringify(e);
   // envia quando algo muda (até ~7 vezes por segundo) e um sinal a cada 2 s
-  if ((ks !== MP._sala && agora - MP.ultimoEnvio > 140) || forcar || agora - MP.ultimoBeat > 2000) {
+  if ((ks !== MP._sala && agora - MP.ultimoEnvio > 200) || forcar || agora - MP.ultimoBeat > 2000) {
     MP._sala = ks; MP.ultimoEnvio = MP.ultimoBeat = agora;
     MP.sala.send({ type: 'broadcast', event: 'e', payload: e }).catch(() => {});
   }

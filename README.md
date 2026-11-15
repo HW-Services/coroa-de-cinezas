@@ -1,6 +1,6 @@
 # Coroa de Cinzas
 
-RPG de ação sombrio que roda no navegador (Three.js). Tem contas por e-mail, seleção de servidor, personagens salvos na nuvem, lista de amigos, clãs, negociação segura entre jogadores e multijogador em tempo real. Os jogadores na mesma cidade, zona ou mapa se veem.
+RPG de ação sombrio que roda no navegador (Three.js). Tem monstros compartilhados entre os jogadores, contas por e-mail, seleção de servidor, personagens salvos na nuvem, lista de amigos, clãs, negociação segura entre jogadores e multijogador em tempo real. Os jogadores na mesma cidade, zona ou mapa se veem.
 
 - **Hospedagem:** GitHub Pages (site estático, gratuito).
 - **Servidor:** Supabase (contas, banco Postgres e tempo real; o plano gratuito basta para o alfa).
@@ -52,6 +52,7 @@ A chave anon é pública por natureza. Quem protege os dados são as regras de R
 | Login / cadastro / esqueci a senha | Supabase Auth (e-mail e senha). Cada conta tem um **apelido** único e público. |
 | Seleção de servidor | Tabela `servidores` (hoje só `brasil-1`). Para abrir outro, insira uma linha nela. |
 | Personagens | Até 4 por conta em cada servidor, salvos na nuvem a cada poucos segundos, com controle de versão. |
+| Monstros compartilhados | Todos na mesma área enfrentam os mesmos monstros. Quem entrou primeiro comanda a IA (anfitrião) e transmite posições e vida; o dano de cada jogador vai ao anfitrião, que anuncia as mortes. Cada jogador vivo a até ~55 m ganha a sua experiência e o seu próprio saque. Se o anfitrião sair, o próximo assume. |
 | Ver outros jogadores | Supabase Realtime: um canal por área (`area:<servidor>:<área>`), com posição, animação, habilidades e balão de conversa. |
 | Online / bate-papo | Canal `lobby:<servidor>` (presença). **Enter** conversa com quem está na área; `/c texto` fala com o clã. |
 | Amigos | Painel **Social (O)** → Amigos. Mostra quem está online e onde, com botões Ir e Negociar. |

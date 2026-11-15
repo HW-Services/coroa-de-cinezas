@@ -888,13 +888,27 @@ J.usarFrasco = function (tipo) {
 // IA dos inimigos
 // ------------------------------------------------------------
 J.alvoDe = function (e) {
-  let alvo = J.jog, d = dist2(e, J.jog);
+  let alvo = J.jog, d = J.estado === 'jogando' || !J.alvosExtras ? dist2(e, J.jog) : 1e9;
+  if (e.nid != null && J.alvosExtras) for (const r of J.alvosExtras) { const dr = dist2(e, r); if (dr < d) { d = dr; alvo = r; } }
   for (const l of J.lacaios) { const dl = dist2(e, l); if (dl < d - 2 && dl < 9) { d = dl; alvo = l; } }
   return [alvo, d];
 };
 J.danoAlvo = function (alvo, dano, elem, e) {
   if (alvo === J.jog) J.danoJogador(dano, elem, e);
-  else { alvo.vida -= dano; alvo.flash = 1; }
+  else if (!alvo.remoto) { alvo.vida -= dano; alvo.flash = 1; }
+};
+
+J.iniciarAtq = function (e, atq, alvo) {
+  e.atq = atq;
+  if (atq.salto) J.criarArea({ x: atq.para.x, z: atq.para.z, raio: 2.6, atraso: 0.7, dono: 'inimigo', dano: 0, cor: '#ffa040', visual: 'nenhum' });
+  if (atq.tipo === 'erguer' && e.d.ia === 'explosivo') J.criarArea({ x: e.x, z: e.z, raio: 3, atraso: 0.65, dono: 'inimigo', dano: e.dano * 2.2, elem: 'fogo', cor: '#ff5010', visual: 'explosao', fonte: null });
+  if (J.aoIniciarAtq) J.aoIniciarAtq(e, atq, alvo);
+};
+// números aleatórios repetíveis (mesmo resultado em todos os jogadores)
+J.comSemente = function (s, fn) {
+  const r0 = Math.random; let a = s >>> 0;
+  Math.random = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  try { return fn(); } finally { Math.random = r0; }
 };
 
 J.atualizarInimigo = function (e, dt) {
@@ -915,6 +929,7 @@ J.atualizarInimigo = function (e, dt) {
   // dots
   for (let i = e.dots.length - 1; i >= 0; i--) {
     const d = e.dots[i]; const q = Math.min(d.t, dt); d.t -= dt; e.vida -= d.dps * q;
+    if (e.marionete && J.aoDanoMarionete) J.aoDanoMarionete(e, d.dps * q);
     if (Math.random() < 0.3) ENG.particulas.emitir({ x: e.x, y: e.y + 0.8 * e.m.escala, z: e.z, n: 1, cor: corElem[d.elem], vel: 1, vida: 0.5, tam: 0.35, sobe: 2, espalhar: 0.6 });
     if (d.t <= 0) e.dots.splice(i, 1);
   }
@@ -922,9 +937,10 @@ J.atualizarInimigo = function (e, dt) {
   e.flash = Math.max(0, e.flash - dt * 6);
   MOD.flash(e.m, e.flash);
   e.lentoT = Math.max(0, e.lentoT - dt); if (e.lentoT <= 0) e.lentoF = 0;
-  const [alvo, d] = J.alvoDe(e);
+  let [alvo, d] = J.alvoDe(e);
+  if (e.marionete && e.atq && e.atq.alvoRef && J.resolverAlvo) { const r = J.resolverAlvo(e.atq.alvoRef); if (r) { alvo = r; d = dist2(e, r); } }
   if (e.estado === 'dormindo') {
-    if (d < (e.boss ? 20 : 19)) J.acordar(e);
+    if (!e.marionete && d < (e.boss ? 20 : 19)) J.acordar(e);
     MOD.animar(e.m, { andar: 0, fase: e.fase, t: e.t, atq: null });
     return true;
   }
@@ -955,7 +971,7 @@ J.atualizarInimigo = function (e, dt) {
       } else if (ia === 'caster') {
         J.criarArea({ x: alvo.x, z: alvo.z, raio: 2.8, atraso: 1.0, dono: 'inimigo', dano: e.dano * 1.4, elem: e.d.elem || 'fogo', cor: e.d.elem === 'veneno' ? '#70c020' : '#ff5020', visual: e.d.elem === 'veneno' ? 'veneno' : 'explosao', fonte: e });
       } else if (ia === 'explosivo') {
-        e.vida = 0; J.matarInimigo(e); return true;
+        if (!e.marionete) { e.vida = 0; J.matarInimigo(e); return true; }
       } else {
         const alc = e.alcance * (e.m.escala > 1.3 ? 1.1 : 1) + 0.6;
         VFX.corte(e.x, e.y, e.z, Math.atan2(Math.cos(e.ang), Math.sin(e.ang)), alc, 100, e.d.elem ? corElem[e.d.elem] : '#ffd0b0', { dur: 0.2, altura: 0.9 * Math.min(1.5, e.m.escala) });
@@ -964,6 +980,8 @@ J.atualizarInimigo = function (e, dt) {
       }
     }
     if (k >= 1) { e.atq = null; e.alt = 0; }
+  } else if (e.marionete) {
+    movendo = J.moverMarionete(e, dt);
   } else {
     const ia = e.d.ia;
     let alvoX = alvo.x, alvoZ = alvo.z, quer = 0;
@@ -972,21 +990,19 @@ J.atualizarInimigo = function (e, dt) {
       else if (d < e.alcance * 0.4) quer = -1;
       else quer = 0.4;
       if (d < e.alcance * 1.05 && e.cd <= 0 && m.borda((alvo.x + e.x) / 2, (alvo.z + e.z) / 2) < 1) {
-        e.atq = { t: 0, dur: ia === 'caster' ? 0.9 : 0.7, golpe: 0.6, tipo: ia === 'caster' ? 'conjurar' : (e.d.visual.arco ? 'disparo' : 'golpe') };
+        J.iniciarAtq(e, { t: 0, dur: ia === 'caster' ? 0.9 : 0.7, golpe: 0.6, tipo: ia === 'caster' ? 'conjurar' : (e.d.visual.arco ? 'disparo' : 'golpe') }, alvo);
         e.cd = (ia === 'caster' ? 3.2 : 2.0) * (0.8 + Math.random() * 0.4) * (e.mods.includes('veloz') ? 0.75 : 1);
       }
     } else if (ia === 'saltador' && d > 4 && d < 10 && e.cd <= 0) {
-      e.atq = { t: 0, dur: 0.75, golpe: 0.95, salto: true, para: { x: alvo.x, z: alvo.z }, tipo: 'golpe' };
+      J.iniciarAtq(e, { t: 0, dur: 0.75, golpe: 0.95, salto: true, para: { x: alvo.x, z: alvo.z }, tipo: 'golpe' }, alvo);
       e.cd = 4;
-      J.criarArea({ x: alvo.x, z: alvo.z, raio: 2.6, atraso: 0.7, dono: 'inimigo', dano: 0, cor: '#ffa040', visual: 'nenhum' });
     } else if (ia === 'explosivo' && d < 2.4) {
-      e.atq = { t: 0, dur: 0.7, golpe: 0.95, tipo: 'erguer' };
-      J.criarArea({ x: e.x, z: e.z, raio: 3, atraso: 0.65, dono: 'inimigo', dano: e.dano * 2.2, elem: 'fogo', cor: '#ff5010', visual: 'explosao', fonte: null });
+      J.iniciarAtq(e, { t: 0, dur: 0.7, golpe: 0.95, tipo: 'erguer' }, alvo);
     } else {
       const alcR = e.alcance + (alvo.raio || 0.4);
       if (d > alcR * 0.85) quer = 1;
       else if (e.cd <= 0) {
-        e.atq = { t: 0, dur: (ia === 'rapido' ? 0.55 : 0.85) * (e.mods.includes('veloz') ? 0.8 : 1), golpe: 0.55, tipo: 'golpe' };
+        J.iniciarAtq(e, { t: 0, dur: (ia === 'rapido' ? 0.55 : 0.85) * (e.mods.includes('veloz') ? 0.8 : 1), golpe: 0.55, tipo: 'golpe' }, alvo);
         e.cd = (ia === 'rapido' ? 0.9 : 1.5) * (0.85 + Math.random() * 0.3);
       }
     }
@@ -1001,7 +1017,7 @@ J.atualizarInimigo = function (e, dt) {
     } else e.ang += angDif(angAlvo, e.ang) * (1 - Math.exp(-dt * 6));
   }
   // separação
-  for (const o of J.inimigos) {
+  if (!e.marionete) for (const o of J.inimigos) {
     if (o === e || o.morto || !o.m.raiz.visible) continue;
     const dx = e.x - o.x, dz = e.z - o.z, dd = Math.hypot(dx, dz), min = e.raio + o.raio;
     if (dd < min && dd > 0.001) { const f = (min - dd) * 0.5; J.mover(e, dx / dd * f, dz / dd * f, e.raio); }
@@ -1018,8 +1034,18 @@ J.atualizarInimigo = function (e, dt) {
 // ------------------------------------------------------------
 // Chefes
 // ------------------------------------------------------------
+J.alvoChefe = function (e) {
+  if (e.marionete) return (e.boss.alvoRef && J.resolverAlvo && J.resolverAlvo(e.boss.alvoRef)) || J.jog;
+  const [a] = J.alvoDe(e); return a.remoto || a === J.jog ? a : J.jog;
+};
+J.usarHabChefe = function (e, h) {
+  const s = (Math.random() * 1e9) >>> 0;
+  if (J.aoHabChefe) J.aoHabChefe(e, h, s);
+  J.comSemente(s, () => J.habChefe(e, h));
+};
 J.atualizarChefe = function (e, dt, d) {
-  const jg = J.jog, B = e.boss, c = e.c;
+  const jg = J.alvoChefe(e), B = e.boss, c = e.c;
+  d = dist2(e, jg);
   B.invulnT = Math.max(0, B.invulnT - dt);
   // fases
   const pct = e.vida / e.vidaMax;
@@ -1030,8 +1056,8 @@ J.atualizarChefe = function (e, dt, d) {
     J.texto(e.x, e.y + 4 * e.m.escala / 2, e.z, B.fase === 3 ? 'FÚRIA!' : 'Fase ' + B.fase, '#ff6040', 28, 1.6);
     ENG.particulas.emitir({ x: e.x, y: e.y + 2, z: e.z, n: 120, cor: corElem[c.elem], vel: 10, vida: 0.9, tam: 0.6 });
     // empurrar jogador
-    const dx = jg.x - e.x, dz = jg.z - e.z, L = Math.hypot(dx, dz) || 1;
-    if (L < 8) J.mover(jg, dx / L * (8 - L), dz / L * (8 - L), 0.4);
+    const jl = J.jog, dx = jl.x - e.x, dz = jl.z - e.z, L = Math.hypot(dx, dz) || 1;
+    if (L < 8) J.mover(jl, dx / L * (8 - L), dz / L * (8 - L), 0.4);
     if (B.fase === 3) { e.vel *= 1.2; e.dano *= 1.15; }
   }
   const velF = [1, 1, 0.82, 0.66][B.fase];
@@ -1051,19 +1077,21 @@ J.atualizarChefe = function (e, dt, d) {
       movendo = 1; e.fase += dt * 20;
       ENG.fumaca.emitir({ x: e.x, y: e.y + 0.3, z: e.z, n: 2, cor: '#6a5a48', vel: 2, vida: 0.6, tam: 1, sobe: 1 });
       if (Math.random() < 0.7) { FM({ x: e.x, y: e.y + 0.3, z: e.z, n: 2, tipo: 'nevoa', cor: '#7a6a54', vel: 2, vida: 0.8, tam: 1.4, tamFim: 2.8, alfa: 0.6, espalhar: e.raio }); FM({ x: e.x, y: e.y + 0.2, z: e.z, n: 1, tipo: 'pedra', cor: '#5a4a3a', vel: 3, vida: 0.6, tam: 0.3, sobe: 2, grav: 12, girar: 8 }); }
-      if (!a.acertou && dist2(jg, e) < e.raio + 1.6) { a.acertou = true; J.danoJogador(e.dano * 1.8, c.elem === 'fisico' ? 'fisico' : 'fisico', e); }
+      if (!a.acertou && dist2(J.jog, e) < e.raio + 1.6) { a.acertou = true; J.danoJogador(e.dano * 1.8, c.elem === 'fisico' ? 'fisico' : 'fisico', e); }
     } else if (a.tipo !== 'investida') e.ang += angDif(angJ, e.ang) * (1 - Math.exp(-dt * 3));
     if (a.t >= a.dur) B.acao = null;
   } else if (e.atq) {
     const a = e.atq; a.t += dt; prog = a.t / a.dur; tipoAnim = 'golpe';
     if (!a.feito && prog >= 0.6) { a.feito = true; }
     if (prog >= 1) e.atq = null;
+  } else if (e.marionete) {
+    movendo = J.moverMarionete(e, dt);
   } else if (B.cdHab <= 0) {
     // escolher habilidade
     let ops = c.habilidades.filter(h => h !== B.ultima);
     if (B.fase === 1) ops = ops.slice(0, Math.max(2, ops.length - 2));
     const h = RNG.pick(ops); B.ultima = h;
-    J.habChefe(e, h);
+    J.usarHabChefe(e, h);
     B.cdHab = (2.6 + Math.random() * 1.2) * velF;
   } else {
     // aproximar e golpear
@@ -1071,13 +1099,7 @@ J.atualizarChefe = function (e, dt, d) {
       const dx = (jg.x - e.x) / d, dz = (jg.z - e.z) / d;
       if (J.mover(e, dx * e.vel * dt * (1 - e.lentoF), dz * e.vel * dt * (1 - e.lentoF), e.raio * 0.6)) movendo = 1;
       e.fase += dt * e.vel * 1.4;
-    } else if (e.cd <= 0) {
-      // golpe básico telegrafado na frente
-      const fx = e.x + Math.sin(angJ) * (e.raio + 1.2), fz = e.z + Math.cos(angJ) * (e.raio + 1.2);
-      J.criarArea({ x: fx, z: fz, raio: 2.6, atraso: 0.65 * velF + 0.1, dono: 'inimigo', dano: e.dano * 1.2, elem: c.elem, cor: '#ff3020', visual: 'tremor', fonte: e });
-      e.atq = { t: 0, dur: 0.85 * velF + 0.1 };
-      e.cd = 1.6 * velF;
-    }
+    } else if (e.cd <= 0) J.usarHabChefe(e, 'basico');
     e.ang += angDif(angJ, e.ang) * (1 - Math.exp(-dt * 5));
   }
   e.mov = lerp(e.mov || 0, movendo, 1 - Math.exp(-dt * 6));
@@ -1090,10 +1112,20 @@ J.atualizarChefe = function (e, dt, d) {
 };
 
 J.habChefe = function (e, h) {
-  const jg = J.jog, B = e.boss, c = e.c, f = B.fase;
+  const jg = J.alvoChefe(e), B = e.boss, c = e.c, f = B.fase;
+  const velF = [1, 1, 0.82, 0.66][f];
   const cor = c.elem === 'fogo' ? '#ff4010' : c.elem === 'frio' ? '#40a0ff' : c.elem === 'veneno' ? '#70d020' : '#ff3020';
   const vis = c.elem === 'fogo' ? 'explosao' : c.elem === 'frio' ? 'gelo' : c.elem === 'veneno' ? 'veneno' : 'tremor';
   switch (h) {
+    case 'basico': {
+      // golpe básico telegrafado na frente
+      const angJ = yawPara(jg.x - e.x, jg.z - e.z);
+      const fx = e.x + Math.sin(angJ) * (e.raio + 1.2), fz = e.z + Math.cos(angJ) * (e.raio + 1.2);
+      J.criarArea({ x: fx, z: fz, raio: 2.6, atraso: 0.65 * velF + 0.1, dono: 'inimigo', dano: e.dano * 1.2, elem: c.elem, cor: '#ff3020', visual: 'tremor', fonte: e });
+      e.atq = { t: 0, dur: 0.85 * velF + 0.1 };
+      e.cd = 1.6 * velF;
+      break;
+    }
     case 'golpeArea': {
       const n = f === 1 ? 3 : f === 2 ? 5 : 7;
       for (let i = 0; i < n; i++) {
@@ -1141,6 +1173,7 @@ J.habChefe = function (e, h) {
       break;
     }
     case 'invocar': {
+      if (e.marionete) { B.acao = { tipo: h, t: 0, dur: 1.0, anim: 'erguer' }; break; }
       const vivos = J.inimigos.filter(o => o.invocado && !o.morto).length;
       if (vivos > 7) { B.cdHab = 0.2; break; }
       const n = 2 + f;
@@ -1194,14 +1227,7 @@ J.atualizar = function (dt) {
     for (let i = J.agendados.length - 1; i >= 0; i--) { const a = J.agendados[i]; a.t -= dt; if (a.t <= 0) { J.agendados.splice(i, 1); a.fn(); } }
     J.atualizarJogador(dt);
     const jg = J.jog;
-    for (let i = J.inimigos.length - 1; i >= 0; i--) {
-      const e = J.inimigos[i];
-      const d = dist2(e, jg);
-      const ativo = d < 60 || (e.estado === 'ativo' && d < 80) || e.boss && e.estado === 'ativo';
-      e.m.raiz.visible = d < 62 || e.morto && d < 70;
-      if (!ativo && !e.morto) continue;
-      if (!J.atualizarInimigo(e, dt)) J.inimigos.splice(i, 1);
-    }
+    J.atualizarInimigos(dt);
     J.atualizarLacaios(dt);
     J.atualizarProjeteis(dt);
     J.atualizarAreas(dt);
@@ -1220,10 +1246,25 @@ J.atualizar = function (dt) {
     // ainda animar o personagem parado
     const jg = J.jog; jg.t += dt;
     MOD.animar(jg.m, { andar: 0, fase: jg.fase, t: jg.t, atq: null });
+    // no multijogador, o anfitrião continua comandando os monstros
+    if (J.simularSempre && J.simularSempre()) { J.atualizarInimigos(dt); J.atualizarProjeteis(dt); J.atualizarAreas(dt); }
   }
   for (let i = J.textos.length - 1; i >= 0; i--) { const t = J.textos[i]; t.t += dt; if (t.t > t.dur) J.textos.splice(i, 1); }
   ENG.atualizarEfeitos(dt);
   ENG.atualizarCamera(new THREE.Vector3(J.jog.x, J.jog.y, J.jog.z), dt);
+};
+
+J.atualizarInimigos = function (dt) {
+  const jg = J.jog;
+  for (let i = J.inimigos.length - 1; i >= 0; i--) {
+    const e = J.inimigos[i];
+    const dl = dist2(e, jg);
+    const d = e.nid != null && J.distOutros ? Math.min(dl, J.distOutros(e)) : dl;
+    const ativo = d < 60 || (e.estado === 'ativo' && d < 80) || e.boss && e.estado === 'ativo';
+    e.m.raiz.visible = dl < 62 || e.morto && dl < 70;
+    if (!ativo && !e.morto) continue;
+    if (!J.atualizarInimigo(e, dt)) J.inimigos.splice(i, 1);
+  }
 };
 
 J.ambiente = function (dt) {
