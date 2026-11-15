@@ -1,0 +1,20 @@
+Coroa de Cinzas — créditos de áudio
+Todos os arquivos desta pasta são licenciados como CC0 (domínio público).
+https://creativecommons.org/publicdomain/zero/1.0/
+
+MÚSICA (audio/musica)
+  tema.mp3               "Short Theme [Rock/Metal]" — nene — https://opengameart.org/node/68238
+  cidade.mp3             "Background Music (LOOP)" — Alex McCulloch (Pro Sensory) — https://opengameart.org/content/background-music-loop
+  megasong.mp3           "Megasong" — Emma_MA — https://opengameart.org/content/megasong
+  unchained_destiny.mp3  "Unchained Destiny [Rock]" — nene — https://opengameart.org/node/138926
+  once_more.mp3          "Once More [Metal]" — nene — https://opengameart.org/node/165075
+  chefe_abertura.mp3 / chefe_loop.mp3
+                         "Boss Battle #2 [Symphonic Metal]" — nene — https://opengameart.org/node/84428
+
+EFEITOS SONOROS (audio/sfx) — recortados, normalizados e convertidos para MP3
+  "50 RPG sound effects" — Kenney (kenney.nl) — https://opengameart.org/content/50-rpg-sound-effects
+  "RPG Sound Pack" — artisticdude — https://opengameart.org/content/rpg-sound-pack
+  "Fantasy Sound Effects (Tinysized SFX)" — Vehicle — https://opengameart.org/content/fantasy-sound-effects-tinysized-sfx
+  "80 CC0 RPG SFX" — rubberduck — https://opengameart.org/content/80-cc0-rpg-sfx
+  "100 CC0 SFX" — rubberduck — https://opengameart.org/content/100-cc0-sfx
+  "100 CC0 SFX #2" — rubberduck — https://opengameart.org/content/100-cc0-sfx-2

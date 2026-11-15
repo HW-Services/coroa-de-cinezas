@@ -21,7 +21,7 @@ jobs:
       - name: Montar o site
         run: |
           mkdir -p _site
-          cp -r index.html js modelos _site/
+          cp -r index.html js modelos audio _site/
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
