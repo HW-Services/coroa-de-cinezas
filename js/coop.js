@@ -143,7 +143,6 @@ COOP.aoPresenca = function (ch, estado) {
   const eraHost = COOP.souHost, eraPronto = COOP.pronto;
   COOP.pronto = true; COOP.hostChave = host; COOP.souHost = host === eu;
   if (!COOP.souHost && (!eraPronto || eraHost)) COOP.pedirEstado();
-  if (COOP.souHost && !eraHost && eraPronto) MP.registrar('Você agora comanda os monstros desta área.', '#a89880');
   COOP.aplicarPapel();
 };
 COOP.aplicarPapel = function () {
