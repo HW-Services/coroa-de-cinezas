@@ -6,11 +6,11 @@
 
 const SOM = {
   ctx: null, gMus: null, gFx: null, buffers: {}, manifesto: null, carregando: false,
-  cfg: { musica: true, efeitos: true, volMus: 0.5, volFx: 0.8 },
+  cfg: { musica: true, efeitos: true, volMus: 0.35, volFx: 0.8, v: 2 },
   ultimo: {}, ativos: {}, contexto: null, decks: [], deckAtual: null, tCtx: 0, passoAcc: 0, rolarAnt: false,
 };
 window.SOM = SOM;
-try { Object.assign(SOM.cfg, JSON.parse(localStorage.getItem('cdc_audio') || '{}')); } catch (e) { }
+try { const salvo = JSON.parse(localStorage.getItem('cdc_audio') || '{}'); if (salvo.v !== 2) delete salvo.volMus; Object.assign(SOM.cfg, salvo, { v: 2 }); } catch (e) { }
 SOM.salvarCfg = () => { try { localStorage.setItem('cdc_audio', JSON.stringify(SOM.cfg)); } catch (e) { } };
 
 // ------------------------------------------------------------
@@ -42,7 +42,7 @@ SOM.iniciar = function () {
 SOM.aplicarVolumes = function () {
   if (!SOM.ctx) return;
   const t = SOM.ctx.currentTime;
-  SOM.gMus.gain.setTargetAtTime(SOM.cfg.musica ? Math.pow(SOM.cfg.volMus, 1.6) * 0.9 : 0, t, 0.05);
+  SOM.gMus.gain.setTargetAtTime(SOM.cfg.musica ? Math.pow(SOM.cfg.volMus, 1.6) * 0.45 : 0, t, 0.05);
   SOM.gFx.gain.setTargetAtTime(SOM.cfg.efeitos ? Math.pow(SOM.cfg.volFx, 1.6) : 0, t, 0.05);
   for (const d of SOM.decks) if (!SOM.cfg.musica && !d.el.paused) d.el.pause();
   if (SOM.cfg.musica && SOM.deckAtual && SOM.deckAtual.el.paused && SOM.deckAtual.el.src) SOM.deckAtual.el.play().catch(() => {});
