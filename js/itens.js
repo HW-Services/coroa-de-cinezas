@@ -161,6 +161,8 @@ IT.calcStats = function (pers, buffs = [], mapaMods = []) {
     if (it.base && BASES[it.base].classe && BASES[it.base].classe !== pers.classe && BASES[it.base].slot === 'arma') continue;
     for (const [k, v] of Object.entries(IT.statsDoItem(it))) { add(k, v); if (k in regItens) regItens[k] += v; }
   }
+  // bônus de conjunto (contam como item)
+  if (IT.bonusConjuntos) IT.bonusConjuntos(pers.equip, (k, v) => { add(k, v); if (k in regItens) regItens[k] += v; });
   // árvore
   for (const p of PASSIVAS) { const r = pers.arvore[p.id] || 0; if (r) for (const [k, v] of Object.entries(p.stats)) add(k, v * r); }
   if (pers.arvore.chave) { const ch = CHAVES[pers.classe].find(c => c.id === pers.arvore.chave); if (ch) for (const [k, v] of Object.entries(ch.stats)) add(k, v); }
@@ -335,7 +337,7 @@ IT.descreverItem = function (it) {
   const B = BASES[it.base];
   let h = `<div class="tt-nome" style="color:${R.cor}">${it.aprim ? '+' + it.aprim + ' ' : ''}${it.nome}</div>`;
   const mA = IT.multAprim(it);
-  if (it.raridade === 'raro' || it.raridade === 'unico' || it.raridade === 'magico' && it.nome !== it.nomeBase) h += `<div class="tt-base" style="color:${R.cor}">${it.raridade === 'magico' ? '' : it.nomeBase}</div>`;
+  if (it.raridade === 'raro' || it.raridade === 'unico' || it.raridade === 'conjunto' || it.raridade === 'magico' && it.nome !== it.nomeBase) h += `<div class="tt-base" style="color:${R.cor}">${it.raridade === 'magico' ? '' : it.nomeBase}</div>`;
   h += `<div class="tt-tipo">${R.nome} · ${B.tipo}${B.classe ? ' · ' + CLASSES[B.classe].nome : ''}</div><div class="tt-sep"></div>`;
   if (it.dano) h += `<div class="tt-l">Dano: <b>${Math.round(it.dano[0] * mA)}–${Math.round(it.dano[1] * mA)}</b></div><div class="tt-l">Ataques por segundo: <b>${it.vel.toFixed(2)}</b></div>`;
   if (it.armadura) h += `<div class="tt-l">Armadura: <b>${Math.round(it.armadura * mA)}</b></div>`;

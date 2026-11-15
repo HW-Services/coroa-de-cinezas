@@ -313,7 +313,7 @@ UI.combinarGemas = function () {
   UI.atualizarInventario(); J.salvar();
 };
 UI.organizar = function () {
-  const p = J.pers; const ordem = { unico: 0, raro: 1, magico: 2, normal: 3, gema: 4 };
+  const p = J.pers; const ordem = { unico: 0, conjunto: 0.5, raro: 1, magico: 2, normal: 3, gema: 4 };
   const its = p.inv.filter(Boolean).sort((a, b) => (ordem[a.raridade] - ordem[b.raridade]) || ((b.ilvl || 0) - (a.ilvl || 0)));
   p.inv = its.concat(new Array(40 - its.length).fill(null));
   UI.atualizarInventario(); J.salvar();
@@ -674,13 +674,13 @@ UI.desenharOverlay = function () {
     const it = r.d.item;
     const txt = it.tipo === 'gema' ? it.nome : it.nome;
     const cor = it.tipo === 'gema' ? GEMAS[it.gema].cor : RARIDADES[it.raridade].cor;
-    g.font = (it.raridade === 'unico' || it.raridade === 'raro' ? '700 ' : '500 ') + '13px "Alegreya Sans", sans-serif';
+    g.font = (it.raridade === 'unico' || it.raridade === 'raro' || it.raridade === 'conjunto' ? '700 ' : '500 ') + '13px "Alegreya Sans", sans-serif';
     const w = g.measureText(txt).width + 14, h = 20;
     let x = r.x - w / 2, y = r.y - h - 4;
     for (let k = 0; k < 8; k++) { const col = UI.rotulos.find(q => !(x + w < q.x || x > q.x + q.w || y + h < q.y || y > q.y + q.h)); if (!col) break; y = col.y - h - 2; }
     const hover = UI.mouseX >= x && UI.mouseX <= x + w && UI.mouseY >= y && UI.mouseY <= y + h;
     g.fillStyle = hover ? 'rgba(60,45,30,.95)' : 'rgba(8,6,5,.85)'; g.fillRect(x, y, w, h);
-    g.strokeStyle = it.raridade === 'unico' ? '#af6025' : it.raridade === 'raro' ? '#8a8a3a' : it.tipo === 'gema' ? cor : 'rgba(120,100,80,.6)'; g.lineWidth = 1; g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    g.strokeStyle = it.raridade === 'unico' ? '#af6025' : it.raridade === 'conjunto' ? '#2a9a3a' : it.raridade === 'raro' ? '#8a8a3a' : it.tipo === 'gema' ? cor : 'rgba(120,100,80,.6)'; g.lineWidth = 1; g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
     g.fillStyle = cor; g.fillText(txt, x + w / 2, y + 14);
     UI.rotulos.push({ d: r.d, x, y, w, h });
   }

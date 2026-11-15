@@ -379,7 +379,7 @@ J.soltar = function (item, x, z) {
   else geo = G('dropItem', () => new THREE.BoxGeometry(0.45, 0.12, 0.35));
   const mat = new THREE.MeshStandardMaterial({ color: cor, emissive: cor, emissiveIntensity: item.tipo === 'gema' ? 1.2 : 0.25, metalness: 0.5, roughness: 0.4 });
   const me = new THREE.Mesh(geo, mat); me.castShadow = true; g.add(me);
-  const alto = item.raridade === 'unico' ? 14 : item.raridade === 'raro' ? 7 : item.tipo === 'gema' ? 5 : item.raridade === 'magico' ? 3 : 0;
+  const alto = item.raridade === 'unico' ? 14 : item.raridade === 'conjunto' ? 11 : item.raridade === 'raro' ? 7 : item.tipo === 'gema' ? 5 : item.raridade === 'magico' ? 3 : 0;
   if (alto) {
     const fb = new THREE.Mesh(G('feixe', () => new THREE.CylinderGeometry(0.06, 0.18, 1, 8, 1, true)), new THREE.MeshBasicMaterial({ color: cor, transparent: true, opacity: 0.45, blending: THREE.AdditiveBlending, depthWrite: false }));
     fb.scale.y = alto; fb.position.y = alto / 2; g.add(fb);

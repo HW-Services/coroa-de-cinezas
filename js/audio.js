@@ -243,7 +243,7 @@ SOM.porQuadro = function (dt) {
   J.soltar = function (item, x, z) {
     const r = so0(item, x, z);
     if (item.tipo === 'ouro') SOM.tocar('moeda', { x, z, vol: 0.35, intervalo: 0.08 });
-    else if (item.raridade === 'unico') { SOM.tocar('sino', { x, z, vol: 0.9, alcance: 60 }); SOM.tocar('gema', { x, z, vol: 0.6 }); }
+    else if (item.raridade === 'unico' || item.raridade === 'conjunto') { SOM.tocar('sino', { x, z, vol: 0.9, alcance: 60 }); SOM.tocar('gema', { x, z, vol: 0.6 }); }
     else if (item.raridade === 'raro') SOM.tocar('sino', { x, z, vol: 0.4, tom: 1.25 });
     else if (item.tipo === 'gema') SOM.tocar('gema', { x, z, vol: 0.55 });
     else SOM.tocar('itemCai', { x, z, vol: 0.4, intervalo: 0.08 });

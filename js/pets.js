@@ -14,7 +14,7 @@ const PETS = {
   corujaNeve: { nome: 'Coruja das Neves', especie: 'coruja', classe: 'feiticeira', icone: '🦉', desc: 'Branca como os picos gélidos.', v: { corpo: 0xf0f0f4, peito: 0xffffff, disco: 0xffffff, olhos: 0xffc020, bico: 0x3a3a3a, asa: 0xd8d8e0, pintas: 0x5a5a6a } },
 };
 const PET_PADRAO = { guerreiro: 'leao', cacadora: 'tigre', feiticeira: 'coruja' };
-const FILTROS_PET = [['ouro', 'Ouro', '#ecc451'], ['normal', 'Itens normais', '#c8c8c8'], ['magico', 'Itens mágicos', '#8888ff'], ['raro', 'Itens raros', '#ffff77'], ['unico', 'Itens únicos', '#d07a30'], ['gema', 'Jóias', '#60e0c0']];
+const FILTROS_PET = [['ouro', 'Ouro', '#ecc451'], ['normal', 'Itens normais', '#c8c8c8'], ['magico', 'Itens mágicos', '#8888ff'], ['raro', 'Itens raros', '#ffff77'], ['unico', 'Itens únicos', '#d07a30'], ['conjunto', 'Itens de conjunto', '#3ed05a'], ['gema', 'Jóias', '#60e0c0']];
 
 // ------------------------------------------------------------
 // Modelos
@@ -292,7 +292,7 @@ PET.alternarPainel = function (abrir) {
   J.migrarSave = function (p) {
     mig0(p); if (!p) return;
     if (!p.pet || !PETS[p.pet.id]) p.pet = { id: PET_PADRAO[p.classe] || 'leao', ativo: true, filtros: {} };
-    p.pet.filtros = Object.assign({ ouro: true, normal: false, magico: true, raro: true, unico: true, gema: true }, p.pet.filtros || {});
+    p.pet.filtros = Object.assign({ ouro: true, normal: false, magico: true, raro: true, unico: true, conjunto: true, gema: true }, p.pet.filtros || {});
   };
   // por quadro
   const at0 = J.atualizar;

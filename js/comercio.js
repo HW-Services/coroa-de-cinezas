@@ -35,7 +35,7 @@ CIDADES.c3.npcs.push('kasim');
 // ------------------------------------------------------------
 // Ouro e preços
 // ------------------------------------------------------------
-const MULT_RAR = { normal: 1, magico: 3, raro: 8, unico: 20 };
+const MULT_RAR = { normal: 1, magico: 3, raro: 8, unico: 20, conjunto: 16 };
 COM.precoVenda = function (it) {
   if (it.tipo === 'gema') return 12 * Math.pow(it.q + 1, 2);
   return Math.round((5 + it.ilvl * 1.6) * (MULT_RAR[it.raridade] || 1) * (1 + 0.25 * (it.aprim || 0)) * (1 + 0.1 * it.encaixes.length));
@@ -137,7 +137,7 @@ COM.acoes = function (it) {
     custo: { ouro: B * (ap + 1) * 2, sucata: ap < 2 ? 3 : 0, essencia: ap >= 2 && ap < 4 ? 2 : 0, po: ap >= 4 ? 2 : 0 }, ok: ap < 5 });
   if (it.raridade === 'normal') lista.push({ id: 'raridade', nome: 'Imbuir: tornar Mágico', desc: 'Adiciona 1 ou 2 afixos aleatórios.', custo: { ouro: B * 3, essencia: 2 }, ok: true });
   if (it.raridade === 'magico') lista.push({ id: 'raridade', nome: 'Imbuir: tornar Raro', desc: 'Adiciona afixos até chegar a quatro e dá um novo nome.', custo: { ouro: B * 6, po: 2 }, ok: true });
-  if (it.raridade !== 'unico' && it.afixos.length) lista.push({ id: 'rerrolar', nome: 'Rerrolar valores', desc: 'Sorteia de novo os valores de todos os afixos.', custo: { ouro: B * 3, essencia: 3 }, ok: true });
+  if (!['unico', 'conjunto'].includes(it.raridade) && it.afixos.length) lista.push({ id: 'rerrolar', nome: 'Rerrolar valores', desc: 'Sorteia de novo os valores de todos os afixos.', custo: { ouro: B * 3, essencia: 3 }, ok: true });
   lista.push({ id: 'encaixe', nome: it.encaixes.length >= maxEnc ? 'Encaixes no máximo' : 'Abrir encaixe', desc: `Adiciona um encaixe para jóia (máximo ${maxEnc}).`, custo: { ouro: B * 5, po: 2, lendario: it.encaixes.length ? 1 : 0 }, ok: it.encaixes.length < maxEnc });
   return lista;
 };
@@ -189,7 +189,7 @@ COM.executar = function (acao, extra) {
 };
 COM.desmontar = function (onde, ref) {
   const p = J.pers; const it = onde === 'inv' ? p.inv[ref] : p.equip[ref]; if (!it || it.tipo !== 'equip') return null;
-  const ganho = { normal: { sucata: RNG.int(1, 2) }, magico: { sucata: 1, essencia: RNG.int(1, 2) }, raro: { essencia: 2, po: RNG.int(1, 2) }, unico: { po: 2, lendario: 1 } }[it.raridade];
+  const ganho = { normal: { sucata: RNG.int(1, 2) }, magico: { sucata: 1, essencia: RNG.int(1, 2) }, raro: { essencia: 2, po: RNG.int(1, 2) }, unico: { po: 2, lendario: 1 }, conjunto: { po: 2, lendario: 1 } }[it.raridade] || { sucata: 1 };
   if (it.aprim) ganho.sucata = (ganho.sucata || 0) + it.aprim;
   for (const [k, v] of Object.entries(ganho)) p.mat[k] = (p.mat[k] || 0) + v;
   // jóias encaixadas voltam para o inventário (ou caem no chão)
@@ -418,7 +418,7 @@ UI.atualizarForja = function () {
     const b = document.createElement('button'); b.className = 'btn'; b.textContent = 'Forjar'; b.disabled = !a.ok || !COM.tem(a.custo);
     b.addEventListener('click', () => COM.executar(a.id)); r.appendChild(b); ac.appendChild(r);
   }
-  if (it.raridade !== 'unico' && it.afixos.length) {
+  if (!['unico', 'conjunto'].includes(it.raridade) && it.afixos.length) {
     const custo = { ouro: COM.base(it) * 2, essencia: it.raridade === 'raro' ? 0 : 1, po: it.raridade === 'raro' ? 1 : 0 };
     const box = document.createElement('div'); box.className = 'acaoForja'; box.style.display = 'block';
     box.innerHTML = `<div class="t">Reforjar um afixo</div><div class="d">Troca um afixo por outro do mesmo tipo. Custo: ${COM.textoCusto(custo)}</div>`;

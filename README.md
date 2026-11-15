@@ -54,6 +54,7 @@ A chave anon é pública por natureza. Quem protege os dados são as regras de R
 | Personagens | Até 4 por conta em cada servidor, salvos na nuvem a cada poucos segundos, com controle de versão. |
 | Zonas | 27 zonas em 3 atos (8, 8 e 11), com mapas de 600×600: caminho em serpentina, ramos com baús de tesouro, santuários e covis. |
 | Mapa da zona | Tecla **Tab** (ou botão "Zona"): traçado da área atual, névoa do que ainda não foi explorado, saídas, Pedra de Passagem, tesouros, santuários, chefe e outros jogadores. |
+| Itens de conjunto | 9 conjuntos verdes (3 por classe, níveis 3, 18 e 32) com 4 ou 5 peças cada e bônus a partir de 2 peças equipadas. Caem de chefes (22%), raros (3%), baús e, raramente, de outros monstros. |
 | Pets | Tecla **P**: 6 companheiros (Leão Dourado e Celeste, Tigre das Sombras e das Neves, Coruja Arcana e das Neves) que seguem o jogador e coletam ouro e itens conforme os filtros marcados. Outros jogadores veem seu pet. |
 | Som | Botão de alto-falante no canto superior direito (também no Menu, Esc): liga/desliga e volume da música e dos efeitos, salvos no navegador. A música muda sozinha entre menu, cidade, zonas (rock) e chefes (metal). |
 | Monstros compartilhados | Todos na mesma área enfrentam os mesmos monstros. Quem entrou primeiro comanda a IA (anfitrião) e transmite posições e vida; o dano de cada jogador vai ao anfitrião, que anuncia as mortes. Cada jogador vivo a até ~55 m ganha a sua experiência e o seu próprio saque. Se o anfitrião sair, o próximo assume. |
