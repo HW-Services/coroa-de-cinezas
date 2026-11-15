@@ -354,7 +354,7 @@ J.abrirTesouro = function (x, z) {
   J.interativos.splice(J.interativos.indexOf(it), 1);
   const y = J.mundo.h(x, z);
   ENG.coluna(x, y, z, '#ffd060', 8, 1.2, 1); ENG.particulas.emitir({ x, y: y + 1, z, n: 60, cor: '#ffe080', vel: 6, vida: 1, tam: 0.4, sobe: 2 });
-  const nivel = J.z.nivel + 1, bonus = J.st.achado + J.z.quant + 120;
+  const nivel = J.nivelDrop(J.z.nivel + 1), bonus = J.st.achado + J.z.quant + 120;
   const n = 2 + (Math.random() < 0.5 ? 1 : 0);
   for (let i = 0; i < n; i++) J.soltar(IT.gerar(nivel, { classe: J.pers.classe, bonus, minimo: i === 0 ? 'raro' : 'magico' }), x, z);
   if (Math.random() < 0.6) J.soltar(IT.gerarGema(nivel), x, z);
@@ -434,7 +434,7 @@ J.nivelMissao = function (m) {
 };
 J.entregarMissao = function (id) {
   const m = MISSAO_POR_ID[id]; if (J.mEstado(id) !== 'pronta') return;
-  const p = J.pers; const r = m.recompensa; const il = J.nivelMissao(m);
+  const p = J.pers; const r = m.recompensa; const il = J.nivelDrop(J.nivelMissao(m));
   const msgs = [];
   if (r.xp) { const q = Math.round(xpProximo(p.nivel) * r.xp * 0.45); J.ganharXP(q); msgs.push(`+${q.toLocaleString('pt-BR')} XP`); }
   if (r.ponto) { p.pontosExtras = (p.pontosExtras || 0) + r.ponto; msgs.push(`+${r.ponto} ponto${r.ponto > 1 ? 's' : ''} de habilidade`); }

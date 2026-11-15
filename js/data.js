@@ -608,7 +608,8 @@ for (const [id, d] of Object.entries(CHEFES)) BIOMA_CHEFE[d.bioma] = id;
 function escalaVida(l) { return (1 + 0.16 * (l - 1)) * Math.pow(1.05, l - 1); }
 function escalaDano(l) { return (1 + 0.11 * (l - 1)) * Math.pow(1.035, l - 1); }
 function xpProximo(l) { return Math.round(90 * Math.pow(l, 1.9) + 60 * l); }
-function xpInimigo(l) { return Math.round((6 + l * 2.2) * Math.pow(1.03, l)); }
+// experiência proporcional ao nível: uma zona completa rende cerca de um nível
+function xpInimigo(l) { return Math.max(1, Math.round(xpProximo(l) / 450)); }
 
 
 // ------------------------------------------------------------

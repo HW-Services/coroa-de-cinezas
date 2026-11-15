@@ -108,7 +108,7 @@ J.gerarInimigos = function () {
   const raros = J.z.mods.some(x => x.id === 'mRaros') ? 2 : 1;
   const grande = (m.AREA || 150) > 200;
   // um grupo de monstros em torno de um ponto do caminho
-  const LIMITE = grande ? 400 : 200;
+  const LIMITE = grande ? 550 : 200;
   const grupo = (c, forcar) => {
     if (J.inimigos.length >= LIMITE && !forcar) return;
     const tipo = RNG.pick(def.inimigos);
@@ -152,20 +152,22 @@ J.criarInimigo = function (tipo, x, z, nivel, rar = 'normal', extra = {}) {
   const d = INIMIGOS[tipo];
   const esc = d.escala * (extra.escala || 1) * (rar === 'raro' ? 1.18 : rar === 'magico' ? 1.06 : 1);
   const m = (d.modelo3d && MOD.criar3D(d.modelo3d, esc, d.tinta3d)) || MOD.criar(d.rig, d.visual, esc);
-  const multR = rar === 'raro' ? 3.6 : rar === 'magico' ? 1.7 : 1;
-  const vidaMax = 26 * 1.35 * d.vida * escalaVida(nivel) * multR * J.z.multVida * (extra.vida || 1);
+  const multR = rar === 'raro' ? 6 : rar === 'magico' ? 2.4 : 1;
+  // dificuldade extra cresce com o nível: leve no início, completa a partir do nível 13
+  const rampa = Math.min(1, Math.max(0, (nivel - 1) / 12));
+  const vidaMax = 26 * (1.05 + 0.55 * rampa) * d.vida * escalaVida(nivel) * multR * J.z.multVida * (extra.vida || 1);
   const e = {
     tipo, d, m, x, z, y: J.mundo.h(x, z), ang: Math.random() * 6.28, nivel, rar, vida: vidaMax, vidaMax,
-    dano: 5 * 1.3 * d.dano * escalaDano(nivel) * (rar === 'raro' ? 1.3 : rar === 'magico' ? 1.15 : 1) * J.z.multDano,
+    dano: 5 * (1.05 + 0.35 * rampa) * d.dano * escalaDano(nivel) * (rar === 'raro' ? 1.6 : rar === 'magico' ? 1.3 : 1) * J.z.multDano,
     vel: d.vel * J.z.multVel * (0.9 + Math.random() * 0.2), alcance: d.alcance, raio: 0.45 * esc, estado: 'dormindo', cd: Math.random() * 1.5,
     atq: null, fase: Math.random() * 6, t: Math.random() * 10, flash: 0, lentoT: 0, lentoF: 0, dots: [], mods: [], morto: false, mortoT: 0,
     pequeno: !!extra.pequeno, invocado: !!extra.invocado, strafe: Math.random() < 0.5 ? 1 : -1,
   };
   if (rar === 'raro') {
-    const nm = RNG.int(2, 3); e.mods = RNG.shuffle(MODS_RAROS.slice()).slice(0, nm).map(x => x.id);
+    const nm = RNG.int(3, 4); e.mods = RNG.shuffle(MODS_RAROS.slice()).slice(0, nm).map(x => x.id);
     e.nome = RNG.pick(NOMES_RAROS_MOB) + ', ' + RNG.pick(TITULOS_RAROS_MOB);
     MOD.tingir(m, 0xffe080, 0.08);
-  } else if (rar === 'magico') { e.mods = [RNG.pick(MODS_RAROS).id]; e.nome = MODS_RAROS.find(x => x.id === e.mods[0]).nome + ' ' + d.nome; MOD.tingir(m, 0x8090ff, 0.08); }
+  } else if (rar === 'magico') { e.mods = RNG.shuffle(MODS_RAROS.slice()).slice(0, RNG.chance(0.4) ? 2 : 1).map(x => x.id); e.nome = MODS_RAROS.find(x => x.id === e.mods[0]).nome + ' ' + d.nome; MOD.tingir(m, 0x8090ff, 0.08); }
   else e.nome = d.nome;
   if (e.mods.includes('veloz')) e.vel *= 1.35;
   if (e.mods.includes('robusto')) { e.vidaMax *= 1.8; e.vida = e.vidaMax; }
@@ -182,10 +184,10 @@ J.criarInimigo = function (tipo, x, z, nivel, rar = 'normal', extra = {}) {
 J.criarChefe = function (id, x, z, nivel) {
   const c = CHEFES[id];
   const m = (c.modelo3d && MOD.criar3D(c.modelo3d, c.escala, c.tinta3d)) || MOD.criar(c.rig, {}, c.escala);
-  const vida = 22 * 1.35 * c.vida * escalaVida(nivel) * J.z.multVida * (J.z.mods.some(x => x.id === 'mChefe') ? 1.5 : 1);
+  const vida = 22 * 1.75 * c.vida * escalaVida(nivel) * J.z.multVida * (J.z.mods.some(x => x.id === 'mChefe') ? 1.5 : 1);
   const e = {
     tipo: id, d: { nome: c.nome, ia: 'chefe', elem: c.elem, alcance: 3.2 * c.escala / 2.5 + 1.5, rig: c.rig }, c, m, x, z, y: J.mundo.h(x, z), ang: -Math.PI / 2, nivel, rar: 'chefe',
-    vida, vidaMax: vida, dano: 6 * 1.3 * c.dano * escalaDano(nivel) * J.z.multDano, vel: c.vel, alcance: 3.2, raio: 0.42 * c.escala, estado: 'dormindo', cd: 2,
+    vida, vidaMax: vida, dano: 6 * 1.45 * c.dano * escalaDano(nivel) * J.z.multDano, vel: c.vel, alcance: 3.2, raio: 0.42 * c.escala, estado: 'dormindo', cd: 2,
     atq: null, fase: 0, t: 0, flash: 0, lentoT: 0, lentoF: 0, dots: [], mods: [], morto: false, mortoT: 0, nome: c.nome,
     boss: { fase: 1, cdHab: 2.5, ultima: null, invulnT: 0, acao: null },
   };
@@ -297,9 +299,9 @@ J.matarInimigo = function (e) {
   J.z.mortos++;
   const st = J.st, jg = J.jog;
   // xp
-  const mxp = e.rar === 'chefe' ? 45 : e.rar === 'raro' ? 6 : e.rar === 'magico' ? 2.5 : 1;
+  const mxp = e.rar === 'chefe' ? 45 : e.rar === 'raro' ? 9 : e.rar === 'magico' ? 3 : 1;
   const dif = J.pers.nivel - e.nivel;
-  const pen = dif > 5 ? Math.max(0.05, 1 - (dif - 5) * 0.18) : 1;
+  const pen = dif > 3 ? Math.max(0.05, 1 - (dif - 3) * 0.15) : 1;
   J.ganharXP(Math.round(xpInimigo(e.nivel) * mxp * pen * (e.invocado ? 0.3 : 1)));
   // frascos
   const carga = e.rar === 'chefe' ? 30 : e.rar === 'raro' ? 4 : 1;
@@ -347,21 +349,23 @@ J.ganharXP = function (q) {
 // ------------------------------------------------------------
 // Saque
 // ------------------------------------------------------------
+J.nivelDrop = (base) => Math.max(1, Math.min(base, J.pers.nivel + 1));
 J.gerarSaque = function (e) {
+  const nvItem = J.nivelDrop(J.z.nivel);
   const bonus = J.st.achado + J.z.quant;
   const quant = 1 + J.z.quant / 100;
   let n = 0, minimo = null;
   if (e.rar === 'chefe') { n = 5 + Math.floor(J.z.nivel / 15); minimo = null; }
-  else if (e.rar === 'raro') n = (Math.random() < 0.9 ? 1 : 0) + (Math.random() < 0.5 ? 1 : 0);
+  else if (e.rar === 'raro') n = 1 + (Math.random() < 0.7 ? 1 : 0) + (Math.random() < 0.25 ? 1 : 0);
   else if (e.rar === 'magico') n = Math.random() < 0.28 * quant ? 1 : 0;
   else n = Math.random() < (e.invocado ? 0.03 : 0.1) * quant ? 1 : 0;
   for (let i = 0; i < n; i++) {
-    const it = IT.gerar(J.z.nivel, { classe: J.pers.classe, bonus: bonus + (e.rar === 'chefe' ? 150 : e.rar === 'raro' ? 60 : 0), minimo: e.rar === 'chefe' && i < 2 ? 'raro' : null });
+    const it = IT.gerar(nvItem, { classe: J.pers.classe, bonus: bonus + (e.rar === 'chefe' ? 150 : e.rar === 'raro' ? 60 : 0), minimo: e.rar === 'chefe' && i < 2 ? 'raro' : null });
     J.soltar(it, e.x, e.z);
   }
   const chGema = e.rar === 'chefe' ? 1 : e.rar === 'raro' ? 0.25 : 0.035;
-  if (Math.random() < chGema) J.soltar(IT.gerarGema(J.z.nivel), e.x, e.z);
-  if (e.rar === 'chefe' && J.z.nivel >= 5 && Math.random() < 0.35) J.soltar(IT.gerar(J.z.nivel, { classe: J.pers.classe, raridade: 'unico' }), e.x, e.z);
+  if (Math.random() < chGema) J.soltar(IT.gerarGema(nvItem), e.x, e.z);
+  if (e.rar === 'chefe' && J.z.nivel >= 5 && Math.random() < 0.35) J.soltar(IT.gerar(nvItem, { classe: J.pers.classe, raridade: 'unico' }), e.x, e.z);
 };
 
 J.soltar = function (item, x, z) {

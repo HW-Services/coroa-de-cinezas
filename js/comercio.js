@@ -81,7 +81,7 @@ COM.ouro = (n) => { J.pers.ouro = Math.max(0, (J.pers.ouro || 0) + n); UI.atuali
 // ------------------------------------------------------------
 COM.gerarEstoque = function (cid) {
   const C = CIDADES[cid]; const p = J.pers;
-  const nivel = Math.max(C.nivel, Math.min(p.nivel, C.nivel + 12));
+  const nivel = Math.min(p.nivel + 1, Math.max(C.nivel, Math.min(p.nivel, C.nivel + 12)));
   const itens = [];
   for (let i = 0; i < 14; i++) itens.push(IT.gerar(nivel, { classe: p.classe, raridade: RNG.chance(0.12) ? 'raro' : RNG.chance(0.55) ? 'magico' : 'normal' }));
   for (let i = 0; i < 3; i++) itens.push(IT.gerarGema(nivel));

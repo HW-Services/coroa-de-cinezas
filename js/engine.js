@@ -141,8 +141,8 @@ ENG.construirMundo = function (biomaId, seed, opcoes = {}) {
   // o terreno vai bem além da área jogável para o horizonte nunca mostrar o vazio
   // zonas de combate são grandes (caminho em serpentina com ramos); cidades e o fundo do menu, menores
   const grande = !opcoes.cidade && !opcoes.pequeno;
-  const AREA = grande ? 250 : 150;
-  const TAM = grande ? 640 : 440, N = grande ? 541 : 411, cel = TAM / (N - 1), meio = TAM / 2;
+  const AREA = grande ? 300 : 150;
+  const TAM = grande ? 740 : 440, N = grande ? 621 : 411, cel = TAM / (N - 1), meio = TAM / 2;
   // --- caminhos ---
   let pts = [];
   const ramosBase = [];
@@ -160,12 +160,12 @@ ENG.construirMundo = function (biomaId, seed, opcoes = {}) {
     pts[0].w = 13; pts[pts.length - 1].w = opcoes.chefe ? 26 : 16;
   } else {
     // caminho principal em serpentina: 2 ou 3 faixas separadas por morros
-    const nLin = rnd() < 0.55 ? 3 : 2;
-    const sep = nLin === 3 ? AREA * 0.62 : AREA * 0.9;
+    const nLin = rnd() < 0.45 ? 4 : 3;
+    const sep = nLin === 4 ? AREA * 0.5 : AREA * 0.64;
     const z0 = -(nLin - 1) / 2 * sep + (rnd() - 0.5) * 16;
     const xa = -AREA + 28, xb = AREA - 28;
     for (let r = 0; r < nLin; r++) {
-      const zr = z0 + r * sep, ida = r % 2 === 0, passos = 13;
+      const zr = z0 + r * sep, ida = r % 2 === 0, passos = 15;
       for (let i = 0; i <= passos; i++) {
         const t = i / passos, x = ida ? lerp(xa, xb, t) : lerp(xb, xa, t);
         const amp = (i === 0 || i === passos) ? 6 : 30;
@@ -177,7 +177,7 @@ ENG.construirMundo = function (biomaId, seed, opcoes = {}) {
     for (let i = 2; i < pts.length - 2; i += 2 + Math.floor(rnd() * 2)) pts[i].w = 15 + rnd() * 6;
     pts[0].w = 13; pts[pts.length - 1].w = opcoes.chefe ? 26 : 16;
     // ramos laterais terminando em locais especiais (tesouro, santuário, covil)
-    const nRamos = 4 + Math.floor(rnd() * 4);
+    const nRamos = 5 + Math.floor(rnd() * 5);
     const tipos = ['tesouro', 'santuario', 'covil'];
     const usados = [];
     for (let k = 0; k < nRamos * 6 && ramosBase.length < nRamos; k++) {
