@@ -1,0 +1,4 @@
+# os modelos são publicados em base64 (.glb.txt); os .glb binários ficam fora do repositório
+modelos/*.glb
+node_modules/
+.DS_Store
