@@ -108,7 +108,9 @@ J.gerarInimigos = function () {
   const raros = J.z.mods.some(x => x.id === 'mRaros') ? 2 : 1;
   const grande = (m.AREA || 150) > 200;
   // um grupo de monstros em torno de um ponto do caminho
+  const LIMITE = grande ? 400 : 200;
   const grupo = (c, forcar) => {
+    if (J.inimigos.length >= LIMITE && !forcar) return;
     const tipo = RNG.pick(def.inimigos);
     let n = RNG.int(3, 6);
     let rarPack = forcar || 'normal';
@@ -128,10 +130,10 @@ J.gerarInimigos = function () {
     const ponto = (s) => { for (const sg of segs) if (s <= sg.s0 + sg.L) { const t = (s - sg.s0) / sg.L; return { x: lerp(sg.a.x, sg.b.x, t), z: lerp(sg.a.z, sg.b.z, t), w: lerp(sg.a.w, sg.b.w, t) }; } const u = cam[cam.length - 1]; return { x: u.x, z: u.z, w: u.w }; };
     for (let s = livreIni; s < comp - livreFim; s += passo) { if (RNG.chance(0.15)) continue; grupo(ponto(s)); }
   };
-  percorrer(m.caminho, 28, def.chefe ? 30 : 8, (grande ? 17 : 13) / dens);
+  percorrer(m.caminho, 28, def.chefe ? 30 : 8, (grande ? 19 : 13) / dens);
   // ramos laterais e seus locais especiais
   for (const r of (m.ramos || [])) {
-    percorrer(r.caminho, 16, 14, 16 / dens);
+    percorrer(r.caminho, 16, 14, 19 / dens);
     const f = { x: r.fim.x, z: r.fim.z, w: r.fim.r * 0.7 };
     if (r.tipo === 'tesouro') grupo(f, 'raro');
     else if (r.tipo === 'covil') { grupo(f, 'raro'); grupo({ x: f.x + 3, z: f.z - 3, w: f.w }, 'raro'); }

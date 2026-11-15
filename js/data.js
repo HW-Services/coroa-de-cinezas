@@ -557,21 +557,36 @@ const NOMES_RAROS_MOB = ['Grath', 'Vel\'kor', 'Myrr', 'Oskarn', 'Thul', 'Zerek',
 const TITULOS_RAROS_MOB = ['o Faminto', 'a Pútrida', 'o Implacável', 'a Silenciosa', 'o Devorador', 'a Maldita', 'o Sanguinário', 'a Eterna', 'o Quebra-Ossos', 'a Tecelã de Dor'];
 
 const ZONAS = [
+  // ---------------- Ato I ----------------
   { id: 'z1', entrada: null, saida: 'c1', ato: 1, nome: 'Litoral Naufragado', nivel: 1, bioma: 'litoral', inimigos: ['afogado', 'caranguejo'], densidade: 0.75 },
-  { id: 'z2', entrada: 'c1', saida: 'z3', ato: 1, nome: 'Costa dos Ossos', nivel: 3, bioma: 'litoral', inimigos: ['afogado', 'caranguejo', 'harpia'] },
-  { id: 'z3', entrada: 'z2', saida: 'z4', ato: 1, nome: 'Recife da Rainha', nivel: 5, bioma: 'litoral', inimigos: ['caranguejo', 'harpia', 'afogado'], chefe: 'mareth' },
-  { id: 'z4', entrada: 'z3', saida: 'z5', ato: 1, nome: 'Brejo das Névoas', nivel: 7, bioma: 'pantano', inimigos: ['sapo', 'lodoso', 'bruxa'] },
-  { id: 'z5', entrada: 'z4', saida: 'c2', ato: 1, nome: 'Charco Profundo', nivel: 9, bioma: 'pantano', inimigos: ['lodoso', 'bruxa', 'sapo'], chefe: 'vhorra' },
-  { id: 'z6', entrada: 'c2', saida: 'z7', ato: 2, nome: 'Floresta Uivante', nivel: 12, bioma: 'floresta', inimigos: ['lobo', 'arqueiro', 'ent'] },
-  { id: 'z7', entrada: 'z6', saida: 'z8', ato: 2, nome: 'Bosque Ancestral', nivel: 15, bioma: 'floresta', inimigos: ['ent', 'lobo', 'arqueiro'], chefe: 'morgrath' },
-  { id: 'z8', entrada: 'z7', saida: 'z9', ato: 2, nome: 'Minas de Cristal', nivel: 18, bioma: 'caverna', inimigos: ['aranha', 'morcego', 'golem'] },
-  { id: 'z9', entrada: 'z8', saida: 'c3', ato: 2, nome: 'Ninho Abissal', nivel: 21, bioma: 'caverna', inimigos: ['aranha', 'golem', 'morcego'], chefe: 'tecela' },
-  { id: 'z10', entrada: 'c3', saida: 'z11', ato: 3, nome: 'Dunas Esquecidas', nivel: 24, bioma: 'deserto', inimigos: ['escorpiao', 'mumia', 'cultista'] },
-  { id: 'z11', entrada: 'z10', saida: 'z12', ato: 3, nome: 'Templo Soterrado', nivel: 27, bioma: 'deserto', inimigos: ['mumia', 'cultista', 'escorpiao'], chefe: 'tuskar' },
-  { id: 'z12', entrada: 'z11', saida: 'z13', ato: 3, nome: 'Picos Gélidos', nivel: 30, bioma: 'gelo', inimigos: ['yeti', 'loboGelo', 'elemental'] },
-  { id: 'z13', entrada: 'z12', saida: 'z14', ato: 3, nome: 'Fortaleza de Gelo', nivel: 34, bioma: 'gelo', inimigos: ['elemental', 'yeti', 'loboGelo'], chefe: 'hrimfang' },
-  { id: 'z14', entrada: 'z13', saida: 'z15', ato: 3, nome: 'Caldeira Ardente', nivel: 38, bioma: 'vulcao', inimigos: ['diabrete', 'salamandra', 'demonio'] },
-  { id: 'z15', entrada: 'z14', saida: 'c3', ato: 3, nome: 'Trono de Cinzas', nivel: 42, bioma: 'vulcao', inimigos: ['demonio', 'diabrete', 'salamandra'], chefe: 'vorthak' },
+  { id: 'z2', entrada: 'c1', saida: 'z2b', ato: 1, nome: 'Costa dos Ossos', nivel: 3, bioma: 'litoral', inimigos: ['afogado', 'caranguejo', 'harpia'] },
+  { id: 'z2b', entrada: 'z2', saida: 'z3', ato: 1, nome: 'Grutas da Maré', nivel: 4, bioma: 'litoral', inimigos: ['caranguejo', 'afogado', 'morcego'], densidade: 1.05 },
+  { id: 'z3', entrada: 'z2b', saida: 'z3b', ato: 1, nome: 'Recife da Rainha', nivel: 5, bioma: 'litoral', inimigos: ['caranguejo', 'harpia', 'afogado'], chefe: 'mareth' },
+  { id: 'z3b', entrada: 'z3', saida: 'z4', ato: 1, nome: 'Cemitério dos Navios', nivel: 6, bioma: 'litoral', inimigos: ['afogado', 'harpia', 'bruxa'] },
+  { id: 'z4', entrada: 'z3b', saida: 'z4b', ato: 1, nome: 'Brejo das Névoas', nivel: 7, bioma: 'pantano', inimigos: ['sapo', 'lodoso', 'bruxa'] },
+  { id: 'z4b', entrada: 'z4', saida: 'z5', ato: 1, nome: 'Turfeiras Podres', nivel: 8, bioma: 'pantano', inimigos: ['lodoso', 'sapo', 'afogado'], densidade: 1.1 },
+  { id: 'z5', entrada: 'z4b', saida: 'c2', ato: 1, nome: 'Charco Profundo', nivel: 9, bioma: 'pantano', inimigos: ['lodoso', 'bruxa', 'sapo'], chefe: 'vhorra' },
+  // ---------------- Ato II ----------------
+  { id: 'z6', entrada: 'c2', saida: 'z6b', ato: 2, nome: 'Floresta Uivante', nivel: 12, bioma: 'floresta', inimigos: ['lobo', 'arqueiro', 'ent'] },
+  { id: 'z6b', entrada: 'z6', saida: 'z7', ato: 2, nome: 'Trilha dos Caçadores', nivel: 13, bioma: 'floresta', inimigos: ['arqueiro', 'lobo', 'bruxa'] },
+  { id: 'z7', entrada: 'z6b', saida: 'z7b', ato: 2, nome: 'Bosque Ancestral', nivel: 15, bioma: 'floresta', inimigos: ['ent', 'lobo', 'arqueiro'], chefe: 'morgrath' },
+  { id: 'z7b', entrada: 'z7', saida: 'z8', ato: 2, nome: 'Raízes Sombrias', nivel: 16, bioma: 'floresta', inimigos: ['ent', 'aranha', 'lobo'], densidade: 1.1 },
+  { id: 'z8', entrada: 'z7b', saida: 'z8b', ato: 2, nome: 'Minas de Cristal', nivel: 18, bioma: 'caverna', inimigos: ['aranha', 'morcego', 'golem'] },
+  { id: 'z8b', entrada: 'z8', saida: 'z8c', ato: 2, nome: 'Galerias Inundadas', nivel: 19, bioma: 'caverna', inimigos: ['golem', 'morcego', 'lodoso'] },
+  { id: 'z8c', entrada: 'z8b', saida: 'z9', ato: 2, nome: 'Fenda Ecoante', nivel: 20, bioma: 'caverna', inimigos: ['aranha', 'golem', 'morcego'], densidade: 1.15 },
+  { id: 'z9', entrada: 'z8c', saida: 'c3', ato: 2, nome: 'Ninho Abissal', nivel: 21, bioma: 'caverna', inimigos: ['aranha', 'golem', 'morcego'], chefe: 'tecela' },
+  // ---------------- Ato III ----------------
+  { id: 'z10', entrada: 'c3', saida: 'z10b', ato: 3, nome: 'Dunas Esquecidas', nivel: 24, bioma: 'deserto', inimigos: ['escorpiao', 'mumia', 'cultista'] },
+  { id: 'z10b', entrada: 'z10', saida: 'z11', ato: 3, nome: 'Oásis Envenenado', nivel: 25, bioma: 'deserto', inimigos: ['escorpiao', 'cultista', 'sapo'] },
+  { id: 'z11', entrada: 'z10b', saida: 'z11b', ato: 3, nome: 'Templo Soterrado', nivel: 27, bioma: 'deserto', inimigos: ['mumia', 'cultista', 'escorpiao'], chefe: 'tuskar' },
+  { id: 'z11b', entrada: 'z11', saida: 'z12', ato: 3, nome: 'Necrópole dos Reis', nivel: 28, bioma: 'deserto', inimigos: ['mumia', 'cultista', 'arqueiro'], densidade: 1.1 },
+  { id: 'z12', entrada: 'z11b', saida: 'z12b', ato: 3, nome: 'Picos Gélidos', nivel: 30, bioma: 'gelo', inimigos: ['yeti', 'loboGelo', 'elemental'] },
+  { id: 'z12b', entrada: 'z12', saida: 'z13', ato: 3, nome: 'Desfiladeiro do Vento', nivel: 32, bioma: 'gelo', inimigos: ['loboGelo', 'yeti', 'harpia'] },
+  { id: 'z13', entrada: 'z12b', saida: 'z13b', ato: 3, nome: 'Fortaleza de Gelo', nivel: 34, bioma: 'gelo', inimigos: ['elemental', 'yeti', 'loboGelo'], chefe: 'hrimfang' },
+  { id: 'z13b', entrada: 'z13', saida: 'z14', ato: 3, nome: 'Geleira Rachada', nivel: 36, bioma: 'gelo', inimigos: ['elemental', 'loboGelo', 'golem'], densidade: 1.1 },
+  { id: 'z14', entrada: 'z13b', saida: 'z14b', ato: 3, nome: 'Caldeira Ardente', nivel: 38, bioma: 'vulcao', inimigos: ['diabrete', 'salamandra', 'demonio'] },
+  { id: 'z14b', entrada: 'z14', saida: 'z15', ato: 3, nome: 'Rios de Magma', nivel: 40, bioma: 'vulcao', inimigos: ['salamandra', 'diabrete', 'demonio'], densidade: 1.15 },
+  { id: 'z15', entrada: 'z14b', saida: 'c3', ato: 3, nome: 'Trono de Cinzas', nivel: 42, bioma: 'vulcao', inimigos: ['demonio', 'diabrete', 'salamandra'], chefe: 'vorthak' },
 ];
 
 const MODS_MAPA = [
@@ -649,4 +664,12 @@ const MISSOES = [
   { id: 'a3_selo', ato: 3, npc: 'duran', tipo: 'objeto', zona: 'z14', objeto: 'Selo Ígneo', nome: 'O Selo Ígneo', texto: 'Um selo ígneo contém o poder de Vorthak na Caldeira Ardente. Quebre-o para enfraquecê-lo.', recompensa: { xp: 0.5, ponto: 1 } },
   { id: 'a3_vorthak', ato: 3, npc: 'zahra', tipo: 'chefe', chefe: 'vorthak', req: 'a3_wyrm', nome: 'O Senhor das Cinzas', texto: 'Vorthak queima o mundo a partir de seu trono. Este é o fim da jornada, ou o começo de outra.', recompensa: { xp: 1.0, ponto: 2, item: 'unico' } },
 ];
+MISSOES.push(
+  { id: 'a1_grutas', ato: 1, npc: 'bram', tipo: 'raro', zona: 'z2b', qtd: 2, nome: 'Ecos nas Grutas', texto: 'Algo grande se esconde nas Grutas da Maré e assusta os peixes. Abata dois monstros raros por lá.', recompensa: { xp: 0.35, item: 'magico' } },
+  { id: 'a1_navios', ato: 1, npc: 'nessa', tipo: 'zona', zona: 'z3b', nome: 'O Cemitério dos Navios', texto: 'Os cascos encalhados do Cemitério dos Navios guardam o caminho para o brejo. Atravesse-o.', recompensa: { xp: 0.4, gema: 1 } },
+  { id: 'a2_trilha', ato: 2, npc: 'corvin', tipo: 'zona', zona: 'z6b', nome: 'A Trilha dos Caçadores', texto: 'Meus batedores sumiram na Trilha dos Caçadores. Percorra-a até o Bosque Ancestral.', recompensa: { xp: 0.4, item: 'magico' } },
+  { id: 'a2_galerias', ato: 2, npc: 'maelis', tipo: 'raro', zona: 'z8b', qtd: 3, nome: 'Guardiões Submersos', texto: 'Golens despertaram nas Galerias Inundadas. Destrua três dos mais fortes.', recompensa: { xp: 0.45, gema: 2 } },
+  { id: 'a3_necropole', ato: 3, npc: 'duran', tipo: 'raro', zona: 'z11b', qtd: 3, nome: 'Os Reis Esquecidos', texto: 'Antigos reis se erguem na Necrópole. Abata três deles e traga paz ao oásis.', recompensa: { xp: 0.45, item: 'raro' } },
+  { id: 'a3_magma', ato: 3, npc: 'zahra', tipo: 'zona', zona: 'z14b', nome: 'Os Rios de Magma', texto: 'Só os Rios de Magma levam ao Trono de Cinzas. Atravesse-os.', recompensa: { xp: 0.5, ponto: 1 } },
+);
 const MISSAO_POR_ID = {}; for (const m of MISSOES) MISSAO_POR_ID[m.id] = m;

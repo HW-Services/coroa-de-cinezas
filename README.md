@@ -52,6 +52,8 @@ A chave anon é pública por natureza. Quem protege os dados são as regras de R
 | Login / cadastro / esqueci a senha | Supabase Auth (e-mail e senha). Cada conta tem um **apelido** único e público. |
 | Seleção de servidor | Tabela `servidores` (hoje só `brasil-1`). Para abrir outro, insira uma linha nela. |
 | Personagens | Até 4 por conta em cada servidor, salvos na nuvem a cada poucos segundos, com controle de versão. |
+| Zonas | 27 zonas em 3 atos (8, 8 e 11), com mapas de 500×500: caminho em serpentina, ramos com baús de tesouro, santuários e covis. |
+| Mapa da zona | Tecla **Tab** (ou botão "Zona"): traçado da área atual, névoa do que ainda não foi explorado, saídas, Pedra de Passagem, tesouros, santuários, chefe e outros jogadores. |
 | Som | Botão de alto-falante no canto superior direito (também no Menu, Esc): liga/desliga e volume da música e dos efeitos, salvos no navegador. A música muda sozinha entre menu, cidade, zonas (rock) e chefes (metal). |
 | Monstros compartilhados | Todos na mesma área enfrentam os mesmos monstros. Quem entrou primeiro comanda a IA (anfitrião) e transmite posições e vida; o dano de cada jogador vai ao anfitrião, que anuncia as mortes. Cada jogador vivo a até ~55 m ganha a sua experiência e o seu próprio saque. Se o anfitrião sair, o próximo assume. |
 | Ver outros jogadores | Supabase Realtime: um canal por área (`area:<servidor>:<área>`), com posição, animação, habilidades e balão de conversa. |
