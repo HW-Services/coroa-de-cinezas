@@ -331,7 +331,7 @@ IT.descreverItem = function (it) {
   if (it.tipo === 'gema') {
     const G = GEMAS[it.gema];
     const linhas = ['arma', 'armadura', 'joia'].map(gr => { const [k, v] = IT.efeitoGema(it.gema, it.q, gr); return `<div class="tt-gl"><b>${gr === 'arma' ? 'Arma' : gr === 'armadura' ? 'Armadura' : 'Joalheria'}:</b> ${STAT_NOMES[k](v)}</div>`; }).join('');
-    return `<div class="tt-nome" style="color:${G.cor}">${it.nome}</div><div class="tt-tipo">Jóia</div><div class="tt-sep"></div>${linhas}<div class="tt-dica">Clique com o botão direito e depois em um item com encaixe livre para encaixar. Junte 3 iguais para melhorar.</div>`;
+    return `<div class="tt-nome" style="color:${G.cor}">${it.nome}</div><div class="tt-tipo">Jóia</div><div class="tt-sep"></div>${linhas}<div class="tt-dica">Clique com o botão direito e depois em um item com encaixe livre para encaixar. Jóias iguais se empilham num só espaço. Leve 3 iguais à Joalheira da cidade para evoluir.</div>`;
   }
   const R = RARIDADES[it.raridade];
   const B = BASES[it.base];

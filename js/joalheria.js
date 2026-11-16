@@ -135,7 +135,7 @@ UI.abrirJoalheria = function (npc) {
   UI.atualizarJoalheria(); UI.atualizarInventario();
 };
 UI.contarGemas = function () {
-  const c = {}; for (const it of J.pers.inv) if (it && it.tipo === 'gema') { const k = it.gema + '_' + it.q; c[k] = (c[k] || 0) + 1; } return c;
+  const c = {}; for (const it of J.pers.inv) if (it && it.tipo === 'gema') { const k = it.gema + '_' + it.q; c[k] = (c[k] || 0) + IT.qtd(it); } return c;
 };
 UI.atualizarJoalheria = function () {
   const el = $('#painelJoias'); if (!el || el.hidden) return;
@@ -166,12 +166,13 @@ UI.atualizarJoalheria = function () {
 };
 UI.evoluirGema = function (g, q, silencioso) {
   const p = J.pers; if (q >= QUALIDADES.length - 1) return false;
-  const idx = []; p.inv.forEach((it, i) => { if (it && it.tipo === 'gema' && it.gema === g && it.q === q) idx.push(i); });
-  if (idx.length < 3) { if (!silencioso) UI.aviso('Precisa de 3 jóias iguais', '#ff9090'); return false; }
+  if (J.contarGema(p.inv, g, q) < 3) { if (!silencioso) UI.aviso('Precisa de 3 jóias iguais', '#ff9090'); return false; }
   if ((p.ouro || 0) < CUSTO_JOIA[q]) { if (!silencioso) UI.aviso('Ouro insuficiente', '#ff9090'); return false; }
   p.ouro -= CUSTO_JOIA[q];
-  idx.slice(0, 3).forEach(i => p.inv[i] = null);
-  p.inv[idx[0]] = { uid: IT.uid(), tipo: 'gema', gema: g, q: q + 1, nome: nomeGema(g, q + 1), raridade: 'gema' };
+  const ult = J.tirarGema(p.inv, g, q, 3);
+  const nova = IT.novaGema(g, q + 1);
+  // se a pilha de origem acabou, a nova jóia fica no mesmo lugar
+  if (!J.inv_temPilha(p.inv, g, q + 1) && ult >= 0 && !p.inv[ult]) p.inv[ult] = nova; else if (J.guardar(p.inv, nova) < 0) J.soltar(nova, J.jog.x, J.jog.z);
   if (!silencioso) {
     UI.aviso(`${nomeGema(g, q + 1)} criada!`, GEMAS[g].cor);
     if (typeof SOM !== 'undefined') { SOM.tocar('gema', { vol: 0.8 }); SOM.tocar('sino', { vol: 0.35 }); }

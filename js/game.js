@@ -393,9 +393,8 @@ J.soltar = function (item, x, z) {
 };
 
 J.pegar = function (d) {
-  const i = J.pers.inv.indexOf(null);
+  const i = J.guardar(J.pers.inv, d.item);
   if (i < 0) { UI.aviso('Inventário cheio', '#ff8080'); return false; }
-  J.pers.inv[i] = d.item;
   ENG.scene.remove(d.mesh); d.me.material.dispose();
   J.drops.splice(J.drops.indexOf(d), 1);
   UI.atualizarInventario();

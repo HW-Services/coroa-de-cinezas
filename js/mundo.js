@@ -438,7 +438,7 @@ J.entregarMissao = function (id) {
   const msgs = [];
   if (r.xp) { const q = Math.round(xpProximo(p.nivel) * r.xp * 0.45); J.ganharXP(q); msgs.push(`+${q.toLocaleString('pt-BR')} XP`); }
   if (r.ponto) { p.pontosExtras = (p.pontosExtras || 0) + r.ponto; msgs.push(`+${r.ponto} ponto${r.ponto > 1 ? 's' : ''} de habilidade`); }
-  const dar = (it) => { const i = p.inv.indexOf(null); if (i >= 0) p.inv[i] = it; else J.soltar(it, J.jog.x, J.jog.z); msgs.push(it.nome); };
+  const dar = (it) => { if (J.guardar(p.inv, it) < 0) J.soltar(it, J.jog.x, J.jog.z); msgs.push(it.nome); };
   if (r.item) dar(IT.gerar(il, { classe: p.classe, raridade: r.item === 'unico' ? 'unico' : undefined, minimo: r.item === 'unico' ? null : r.item, base: r.arma ? CLASSES[p.classe].arma : undefined }));
   if (r.gema) dar(IT.gerarGema(il, Math.min(3, r.gema)));
   p.missoes[id].e = 'feita';

@@ -37,7 +37,7 @@ CIDADES.c3.npcs.push('kasim');
 // ------------------------------------------------------------
 const MULT_RAR = { normal: 1, magico: 3, raro: 8, unico: 20, conjunto: 16 };
 COM.precoVenda = function (it) {
-  if (it.tipo === 'gema') return 12 * Math.pow(it.q + 1, 2);
+  if (it.tipo === 'gema') return 12 * Math.pow(it.q + 1, 2) * IT.qtd(it);
   return Math.round((5 + it.ilvl * 1.6) * (MULT_RAR[it.raridade] || 1) * (1 + 0.25 * (it.aprim || 0)) * (1 + 0.1 * it.encaixes.length));
 };
 COM.precoCompra = (it) => COM.precoVenda(it) * 4;
@@ -108,8 +108,8 @@ COM.venderTodos = function (rar) {
 COM.comprar = function (lista, i, preco) {
   const p = J.pers; const it = lista[i]; if (!it) return;
   if ((p.ouro || 0) < preco) { UI.aviso('Ouro insuficiente', '#ff9080'); return; }
-  const k = p.inv.indexOf(null); if (k < 0) { UI.aviso('Inventário cheio', '#ff9080'); return; }
-  COM.ouro(-preco); p.inv[k] = it; lista.splice(i, 1);
+  if (J.guardar(p.inv, it) < 0) { UI.aviso('Inventário cheio', '#ff9080'); return; }
+  COM.ouro(-preco); lista.splice(i, 1);
   UI.aviso(`${it.nome} comprado`, '#ecc451');
   UI.esconderTooltip(); UI.atualizarInventario(); UI.atualizarLoja(); J.salvar();
 };
@@ -193,8 +193,8 @@ COM.desmontar = function (onde, ref) {
   if (it.aprim) ganho.sucata = (ganho.sucata || 0) + it.aprim;
   for (const [k, v] of Object.entries(ganho)) p.mat[k] = (p.mat[k] || 0) + v;
   // jóias encaixadas voltam para o inventário (ou caem no chão)
-  for (const g of it.encaixes) if (g) { const gem = { uid: IT.uid(), tipo: 'gema', gema: g.gema, q: g.q, nome: GEMAS[g.gema].nome + ' ' + QUALIDADES[g.q].nome, raridade: 'gema' }; const k = p.inv.indexOf(null); if (k >= 0 && !(onde === 'inv' && k === ref)) p.inv[k] = gem; else J.soltar(gem, J.jog.x, J.jog.z); }
   if (onde === 'inv') p.inv[ref] = null; else delete p.equip[ref];
+  for (const g of it.encaixes) if (g) { const gem = IT.novaGema(g.gema, g.q); if (J.guardar(p.inv, gem) < 0) J.soltar(gem, J.jog.x, J.jog.z); }
   return ganho;
 };
 COM.desmontarSel = function () {

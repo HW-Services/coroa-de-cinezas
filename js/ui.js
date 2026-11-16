@@ -252,7 +252,7 @@ UI.atualizarInventario = function () {
   const g = $('#grade'); g.innerHTML = '';
   p.inv.forEach((it, i) => {
     const d = UI.celula(it, 'cel'); if (UI.gemaSel === i) d.classList.add('selec');
-    d.addEventListener('contextmenu', (ev) => { ev.preventDefault(); if (!it) return; if (!$('#painelBau').hidden && !ev.shiftKey) { const k = J.pers.bau.indexOf(null); if (k < 0) { UI.aviso('Baú cheio', '#ff8080'); return; } J.pers.bau[k] = it; J.pers.inv[i] = null; UI.esconderTooltip(); UI.atualizarInventario(); UI.atualizarBau(); J.salvar(); return; } if (ev.shiftKey) UI.removerGemas(it); else if (it.tipo === 'gema') { UI.gemaSel = UI.gemaSel === i ? null : i; UI.atualizarInventario(); if (UI.gemaSel != null) UI.aviso('Clique em um item com encaixe livre'); } else UI.equipar(i); });
+    d.addEventListener('contextmenu', (ev) => { ev.preventDefault(); if (!it) return; if (!$('#painelBau').hidden && !ev.shiftKey) { if (J.guardar(J.pers.bau, it) < 0) { UI.aviso('Baú cheio', '#ff8080'); return; } J.pers.inv[i] = null; UI.esconderTooltip(); UI.atualizarInventario(); UI.atualizarBau(); J.salvar(); return; } if (ev.shiftKey) UI.removerGemas(it); else if (it.tipo === 'gema') { UI.gemaSel = UI.gemaSel === i ? null : i; UI.atualizarInventario(); if (UI.gemaSel != null) UI.aviso('Clique em um item com encaixe livre'); } else UI.equipar(i); });
     d.addEventListener('click', () => { if (UI.gemaSel != null && it && it.tipo === 'equip') UI.encaixar(it); });
     d.addEventListener('mouseenter', () => {
       UI.hoverItem = { onde: 'inv', i };
@@ -287,14 +287,14 @@ UI.encaixar = function (alvo) {
   if (!gema || gema.tipo !== 'gema') { UI.gemaSel = null; return; }
   const k = alvo.encaixes.indexOf(null);
   if (k < 0) { UI.aviso(alvo.encaixes.length ? 'Sem encaixes livres' : 'Este item não tem encaixes', '#ff8080'); return; }
-  alvo.encaixes[k] = { gema: gema.gema, q: gema.q }; p.inv[gi] = null; UI.gemaSel = null;
+  alvo.encaixes[k] = { gema: gema.gema, q: gema.q }; if (IT.qtd(gema) > 1) gema.qtd = IT.qtd(gema) - 1; else p.inv[gi] = null; UI.gemaSel = null;
   UI.aviso(`${gema.nome} encaixada`);
   J.recalc(); UI.esconderTooltip(); UI.atualizarInventario(); UI.atualizarPersonagemSeAberto(); J.salvar();
 };
 UI.removerGemas = function (it) {
   if (!it || !it.encaixes) return;
   const p = J.pers; let n = 0;
-  it.encaixes.forEach((g, k) => { if (!g) return; const i = p.inv.indexOf(null); if (i < 0) return; p.inv[i] = { uid: IT.uid(), tipo: 'gema', gema: g.gema, q: g.q, nome: GEMAS[g.gema].nome + ' ' + QUALIDADES[g.q].nome, raridade: 'gema' }; it.encaixes[k] = null; n++; });
+  it.encaixes.forEach((g, k) => { if (!g) return; if (J.guardar(p.inv, IT.novaGema(g.gema, g.q)) < 0) return; it.encaixes[k] = null; n++; });
   if (n) { UI.aviso(`${n} jóia(s) removida(s)`); J.recalc(); UI.esconderTooltip(); UI.atualizarInventario(); J.salvar(); }
 };
 UI.combinarGemas = function () {
@@ -580,7 +580,7 @@ UI.atualizarBau = function () {
   const g = $('#gradeBau'); g.innerHTML = '';
   J.pers.bau.forEach((it, i) => {
     const d = UI.celula(it, 'cel');
-    d.addEventListener('contextmenu', (ev) => { ev.preventDefault(); if (!it) return; const k = J.pers.inv.indexOf(null); if (k < 0) { UI.aviso('Inventário cheio', '#ff8080'); return; } J.pers.inv[k] = it; J.pers.bau[i] = null; UI.esconderTooltip(); UI.atualizarBau(); UI.atualizarInventario(); J.salvar(); });
+    d.addEventListener('contextmenu', (ev) => { ev.preventDefault(); if (!it) return; if (J.guardar(J.pers.inv, it) < 0) { UI.aviso('Inventário cheio', '#ff8080'); return; } J.pers.bau[i] = null; UI.esconderTooltip(); UI.atualizarBau(); UI.atualizarInventario(); J.salvar(); });
     d.addEventListener('mouseenter', () => { if (it) UI.mostrarTooltip(IT.descreverItem(it), d); });
     d.addEventListener('mouseleave', UI.esconderTooltip);
     g.appendChild(d);
