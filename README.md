@@ -94,7 +94,7 @@ Modelos 3D: KayKit (Kay Lousberg) e Quaternius, licença CC0. Veja `modelos/LICE
 Músicas (rock e metal) e efeitos sonoros: todos CC0, de nene, Emma_MA, Alex McCulloch (Pro Sensory), Kenney, artisticdude, Vehicle e rubberduck. Veja `audio/CREDITOS.txt`.
 
 ## Combos elementais
-Cada golpe deixa uma marca no inimigo (Em Chamas, Gelado, Eletrizado, Envenenado, Sangrando, Perfurado, Vendaval, Atordoado). Acertar o mesmo inimigo com outro tipo detona uma reação de dano elevado: Tempestade de Fogo (fogo + vento), Supercondutor (gelo + raio), Hemorragia (sangramento + perfuração), Estilhaçar, Sobrecarga, Tempestade Elétrica, Derretimento, Combustão Tóxica, Corrosão, Nevasca, Ruptura, Sangue Tóxico e Para-raios. A lista fica no painel **Combos (L)**.
+Cada golpe deixa uma marca no inimigo (Em Chamas, Gelado, Eletrizado, Envenenado, Sangrando, Perfurado, Vendaval, Atordoado). Acertar o mesmo inimigo com outro tipo detona uma reação de dano elevado: Tempestade de Fogo (fogo + vento), Supercondutor (gelo + raio), Hemorragia (sangramento + perfuração), Estilhaçar, Sobrecarga, Tempestade Elétrica, Derretimento, Combustão Tóxica, Corrosão, Nevasca, Ruptura, Sangue Tóxico e Para-raios. A lista fica no painel **Combos (L)**. Os combos funcionam entre jogadores: a marca deixada por um pode ser detonada por outro na mesma área.
 
 ## Jóias e joalheira
 Jóias em cinco qualidades (Lascada, Comum, Impecável, Real, Grandiosa), cada uma com lapidação própria. Em cada cidade há uma joalheira (Íris, Tâmsin e Yasmin) que evolui 3 jóias iguais + ouro em 1 da qualidade seguinte e remove jóias encaixadas de graça.

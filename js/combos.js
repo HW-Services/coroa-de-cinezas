@@ -73,11 +73,13 @@ COMBO.reacao = function (x, y) { return REACOES.find(r => (r.a === x && r.b === 
         const R = COMBO.reacao(nova, velha); if (!R) continue;
         delete e.marcas[velha];
         e.comboCD = agora + 0.4;
+        COMBO.rede.detonou(e, velha, R);
         COMBO.detonar(e, d, R);
         return d;
       }
     }
     for (const nova of novas) e.marcas[nova] = agora + DUR_MARCA;
+    COMBO.rede.marcou(e, novas);
     return d;
   };
 }
@@ -118,17 +120,73 @@ COMBO.detonar = function (e, d, R) {
       de = melhor;
     }
   }
-  // efeito visual e sonoro
-  ENG.particulas.emitir({ x: e.x, y: e.y + 1, z: e.z, n: 40, cor: R.cor, cor2: '#ffffff', vel: 6, vida: 0.55, tam: 0.5, sobe: 1.2, espalhar: 0.6 });
-  ENG.luz(new THREE.Vector3(e.x, e.y + 2, e.z), R.cor, 6, 0.35, 14);
-  ENG.coluna(e.x, J.mundo.h(e.x, e.z), e.z, R.cor, 5, 0.9, 0.35);
-  ENG.tremor = Math.max(ENG.tremor || 0, 0.35);
-  J.texto(e.x, y + 0.9, e.z, R.nome + '!', R.cor, 26);
-  if (typeof SOM !== 'undefined') { SOM.tocar(R.area || R.cadeia ? 'explosao' : R.elem === 'raio' ? 'trovao' : 'impacto', { x: e.x, z: e.z, vol: 0.85 }); }
+  COMBO.fx(e, R);
   J.combosFeitos = (J.combosFeitos || 0) + 1;
 
   function acertar(alvo, qtd, elem) { if (qtd >= 1) J.acertarInimigo(alvo, 1, { elem }, Object.assign({ base: qtd, elem }, base)); }
 };
+// efeito visual e sonoro de uma reação (também usado quando outro jogador detona)
+COMBO.fx = function (e, R, quem) {
+  const y = e.y + (e.m.alturaCabeca || 1.8) * e.m.escala;
+  if (quem && R.area) ENG.onda(e.x, J.mundo.h(e.x, e.z) + 0.15, e.z, R.area, R.cor, 0.5);
+  ENG.particulas.emitir({ x: e.x, y: e.y + 1, z: e.z, n: 40, cor: R.cor, cor2: '#ffffff', vel: 6, vida: 0.55, tam: 0.5, sobe: 1.2, espalhar: 0.6 });
+  ENG.luz(new THREE.Vector3(e.x, e.y + 2, e.z), R.cor, 6, 0.35, 14);
+  ENG.coluna(e.x, J.mundo.h(e.x, e.z), e.z, R.cor, 5, 0.9, 0.35);
+  ENG.tremor = Math.max(ENG.tremor || 0, 0.35);
+  J.texto(e.x, y + 0.9, e.z, R.nome + '!' + (quem ? ' (' + quem + ')' : ''), R.cor, quem ? 22 : 26);
+  if (typeof SOM !== 'undefined') { SOM.tocar(R.area || R.cadeia ? 'explosao' : R.elem === 'raio' ? 'trovao' : 'impacto', { x: e.x, z: e.z, vol: quem ? 0.6 : 0.85 }); }
+};
+
+// ---------- combos entre jogadores ----------
+// As marcas de cada jogador são enviadas à sala da área (agrupadas a cada 120 ms):
+// qualquer jogador pode detonar a marca deixada por outro. A detonação avisa os demais,
+// que removem a marca consumida e veem o efeito. O dano extra segue pelo mesmo caminho
+// de qualquer golpe (o anfitrião aplica e repassa).
+COMBO.rede = {
+  fila: new Map(), timer: null,
+  ativo: () => typeof COOP !== 'undefined' && COOP.ativo && COOP.ativo(),
+  marcou(e, marcas) {
+    if (e.nid == null || !this.ativo()) return;
+    const k = e.nid; const s = this.fila.get(k) || new Set(); marcas.forEach(m => s.add(m)); this.fila.set(k, s);
+    if (!this.timer) this.timer = setTimeout(() => this.enviarFila(), 120);
+  },
+  enviarFila() {
+    this.timer = null; if (!this.fila.size || !this.ativo()) { this.fila.clear(); return; }
+    const l = []; for (const [n, s] of this.fila) l.push([n, [...s].join(',')]);
+    this.fila.clear();
+    COOP.enviar('mk', { l: l.slice(0, 60) });
+  },
+  detonou(e, consumida, R) {
+    if (e.nid == null || !this.ativo()) return;
+    COOP.enviar('mx', { n: e.nid, m: consumida, r: R.id, q: (J.pers && J.pers.nome) || '' });
+  },
+  receber(m) {
+    if (!J.inimigos || !J.z) return;
+    const agora = J.tempo || 0;
+    const porNid = (n) => J.inimigos.find(x => x.nid === n && !x.morto);
+    if (m.t === 'mk' && Array.isArray(m.l)) {
+      for (const it of m.l.slice(0, 60)) {
+        if (!Array.isArray(it)) continue;
+        const e = porNid(+it[0]); if (!e) continue;
+        e.marcas = e.marcas || {};
+        for (const mk of String(it[1] || '').split(',')) if (MARCAS[mk]) e.marcas[mk] = agora + DUR_MARCA;
+      }
+    } else if (m.t === 'mx') {
+      const e = porNid(+m.n); if (!e) return;
+      if (e.marcas && MARCAS[m.m]) delete e.marcas[m.m];
+      e.comboCD = agora + 0.25;
+      const R = REACOES.find(r => r.id === m.r);
+      if (R && e.m && e.m.raiz.visible) COMBO.fx(e, R, String(m.q || 'aliado').slice(0, 16));
+    }
+  },
+};
+if (typeof COOP !== 'undefined') {
+  const rec0 = COOP.receber;
+  COOP.receber = function (m) {
+    if (m && (m.t === 'mk' || m.t === 'mx')) { if (m.k0 !== COOP.minhaChave()) COMBO.rede.receber(m); return; }
+    return rec0.apply(this, arguments);
+  };
+}
 
 // ---------- marcas sobre as barras de vida ----------
 {
