@@ -93,26 +93,63 @@ GFX.gerarTexturas = function () {
     const m = (R.fbm(u + 0.5, v + 0.2, 4, 3) - 0.5) * 0.25;
     return [h, l, 1 + m, 1, 1 - m];
   }, 4);
-  // caminho: terra batida com trechos de calçamento gasto
+  // caminho: terra batida com seixos, sulcos e pedrinhas
   [GFX.tex.camA, GFX.tex.camN] = gerarMaterialTex(T, (u, v) => {
-    const [f1, f2, id] = R.vor(u, v, 14);
-    const borda = clamp((f2 - f1) / 0.1, 0, 1);
-    const trecho = clamp((R.fbm(u + 0.3, v + 0.7, 2, 3) - 0.53) * 7, 0, 1) * (id > 0.15 ? 1 : 0.3);
-    const pedra = borda * borda * (3 - 2 * borda) * trecho;
-    const f = R.fbm(u, v, 12, 5), f3 = R.fbm(u + 0.9, v, 40, 3);
-    const [c1, , cid] = R.vor(u + 0.5, v + 0.5, 48); const seixo = cid > 0.8 ? clamp((0.3 - c1) / 0.2, 0, 1) : 0;
-    const h = pedra * (0.5 + id * 0.3) + f * 0.3 + f3 * 0.12 + seixo * 0.35 - (1 - pedra) * trecho * 0.15;
-    const terra = 0.38 + (f - 0.5) * 0.35 + (f3 - 0.5) * 0.18 + seixo * 0.15;
-    const l = terra * (1 - trecho * 0.4) + pedra * (0.2 + id * 0.15) + trecho * (1 - pedra) * 0.06;
-    const m = (id - 0.5) * 0.1 * pedra;
-    return [h, l, 1.03 + m, 1, 0.94 - m * 0.6];
+    const f = R.fbm(u, v, 8, 6), f3 = R.fbm(u + 0.9, v, 32, 3);
+    const [c1, , cid] = R.vor(u + 0.5, v + 0.5, 36); const seixo = cid > 0.62 ? clamp((0.34 - c1) / 0.18, 0, 1) : 0;
+    const [p1, , pid] = R.vor(u + 0.2, v + 0.8, 90); const grao = pid > 0.5 ? clamp((0.4 - p1) / 0.25, 0, 1) : 0;
+    const sulco = Math.pow(R.ridge(u + 0.13, v + 0.4, 3, 4), 6);
+    const h = f * 0.45 + f3 * 0.15 + seixo * (0.55 + cid * 0.2) + grao * 0.15 - sulco * 0.25;
+    const l = 0.36 + (f - 0.5) * 0.3 + (f3 - 0.5) * 0.14 + seixo * (0.1 + (cid - 0.6) * 0.6) + grao * 0.06 - sulco * 0.1;
+    const m = (R.fbm(u + 0.3, v + 0.6, 3, 3) - 0.5) * 0.18 + seixo * (cid - 0.8) * 0.2;
+    return [h, l, 1.05 + m, 1, 0.92 - m];
   }, 5);
+  // calçamento das cidades: pedras arredondadas com rejunte
+  [GFX.tex.calcA, GFX.tex.calcN] = gerarMaterialTex(T, (u, v) => {
+    const [f1, f2, id] = R.vor(u, v, 11);
+    const borda = clamp((f2 - f1) / 0.16, 0, 1); const bord = Math.sqrt(borda);
+    const f = R.fbm(u, v, 16, 4), f3 = R.fbm(u + 0.4, v + 0.2, 48, 2);
+    const desgaste = R.fbm(u + 0.7, v + 0.1, 3, 3);
+    const h = bord * (0.6 + id * 0.15) + f * 0.12 + f3 * 0.06;
+    const l = borda < 0.08 ? 0.16 + f3 * 0.08 : (0.34 + id * 0.2 + (f - 0.5) * 0.18 + (f3 - 0.5) * 0.08) * (0.85 + desgaste * 0.3) * (0.82 + bord * 0.18);
+    const m = (id - 0.5) * 0.12;
+    return [h, l, 1.0 + m, 0.98, 0.95 - m * 0.5];
+  }, 6);
+  // casca de árvore: sulcos verticais
+  [GFX.tex.cascaA, GFX.tex.cascaN] = gerarMaterialTex(256, (u, v) => {
+    const r = R.ridge(u * 1, v * 0.25, 6, 4); const f = R.fbm(u, v, 12, 4);
+    const h = Math.pow(r, 2.2) * 0.8 + f * 0.2;
+    return [h, 0.3 + h * 0.5, 1.05, 1, 0.95];
+  }, 5);
+  // telhas de barro em fileiras
+  [GFX.tex.telhaA, GFX.tex.telhaN] = gerarMaterialTex(256, (u, v) => {
+    const fil = 8, col = 6; const vy = v * fil, fy = vy - Math.floor(vy);
+    const ux = u * col + (Math.floor(vy) % 2) * 0.5; const fx = ux - Math.floor(ux);
+    const id = R.n(Math.floor(ux) * 7.3 % 256, Math.floor(vy) * 3.1 % 256);
+    const curva = Math.sin(fx * Math.PI); const f = R.fbm(u, v, 16, 3);
+    const h = curva * 0.55 + fy * 0.45 + f * 0.1;
+    const l = (0.32 + curva * 0.22 + id * 0.12 + f * 0.08) * (0.55 + fy * 0.45);
+    return [h, l, 1, 1, 1];
+  }, 5);
+  // reboco (paredes)
+  [GFX.tex.rebocoA, GFX.tex.rebocoN] = gerarMaterialTex(256, (u, v) => {
+    const f = R.fbm(u, v, 6, 5), f2 = R.fbm(u + 0.3, v, 32, 3); const mancha = clamp((R.fbm(u + 0.5, v + 0.5, 3, 4) - 0.55) * 4, 0, 1);
+    return [f * 0.5 + f2 * 0.3, 0.62 + (f - 0.5) * 0.15 + (f2 - 0.5) * 0.08 - mancha * 0.12, 1, 0.98, 0.95];
+  }, 2);
+  // madeira em tábuas
+  [GFX.tex.madeiraA, GFX.tex.madeiraN] = gerarMaterialTex(256, (u, v) => {
+    const tb = 4, ft = u * tb - Math.floor(u * tb), id = Math.floor(u * tb);
+    const veio = R.fbm(u * 0.3 + id * 0.17, v * 4, 4, 5); const sulco = ft < 0.05 || ft > 0.95 ? 1 : 0;
+    const h = veio * 0.5 - sulco * 0.5; const l = (0.36 + veio * 0.3 + (id % 2) * 0.05) * (1 - sulco * 0.55);
+    return [h, l, 1.05, 1, 0.92];
+  }, 4);
   // rocha: estratos e rachaduras
   [GFX.tex.rochaA, GFX.tex.rochaN] = gerarMaterialTex(T, (u, v) => {
     const r = R.ridge(u, v, 4, 6); const st = Math.sin((v + R.fbm(u, v, 3, 3) * 0.35) * Math.PI * 2 * 7) * 0.5 + 0.5;
-    const [f1, f2] = R.vor(u, v, 7); const fenda = clamp((f2 - f1) / 0.05, 0, 1);
-    const h = r * 0.7 + st * 0.2 + fenda * 0.25;
-    const l = (0.3 + r * 0.35 + st * 0.08) * (0.55 + fenda * 0.45);
+    const [f1, f2] = R.vor(u + R.fbm(u, v, 5, 3) * 0.08, v, 5); const fenda = clamp((f2 - f1) / 0.035, 0, 1);
+    const lasca = R.fbm(u + 0.2, v + 0.6, 10, 4);
+    const h = r * 0.7 + st * 0.2 + fenda * 0.12 + lasca * 0.15;
+    const l = (0.3 + r * 0.3 + st * 0.1 + (lasca - 0.5) * 0.15) * (0.8 + fenda * 0.2);
     return [h, l, 1.02, 1, 0.97];
   }, 5);
   // pico / neve / areia fina
@@ -179,32 +216,36 @@ GFX.gerarTexturas = function () {
 // ============================================================
 //  Material do terreno (camadas com triplanar na rocha)
 // ============================================================
-GFX.materialTerreno = function (biomaId) {
+GFX.materialTerreno = function (biomaId, cidade = false) {
   const umido = biomaId === 'pantano' || biomaId === 'litoral';
   const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: umido ? 0.78 : 0.95, metalness: 0 });
   const U = {
-    tSolo: { value: GFX.tex.soloA }, tCam: { value: GFX.tex.camA }, tRocha: { value: GFX.tex.rochaA }, tPico: { value: GFX.tex.picoA },
-    nSolo: { value: GFX.tex.soloN }, nCam: { value: GFX.tex.camN }, nRocha: { value: GFX.tex.rochaN }, nPico: { value: GFX.tex.picoN },
-    escala: { value: 0.16 }, forcaN: { value: 0.9 },
+    tSolo: { value: GFX.tex.soloA }, tCam: { value: cidade ? GFX.tex.calcA : GFX.tex.camA }, tRocha: { value: GFX.tex.rochaA }, tPico: { value: GFX.tex.picoA },
+    nSolo: { value: GFX.tex.soloN }, nCam: { value: cidade ? GFX.tex.calcN : GFX.tex.camN }, nRocha: { value: GFX.tex.rochaN }, nPico: { value: GFX.tex.picoN },
+    escala: { value: 0.16 }, forcaN: { value: 0.9 }, escalaC: { value: cidade ? 0.0 : 1.0 },
   };
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, U);
     sh.vertexShader = 'attribute vec4 peso;\nvarying vec4 vPeso;\nvarying vec3 vPosW;\nvarying vec3 vNormW;\n' + sh.vertexShader.replace('#include <begin_vertex>',
       '#include <begin_vertex>\nvPeso = peso;\nvPosW = (modelMatrix * vec4(position, 1.0)).xyz;\nvNormW = normalize(mat3(modelMatrix) * normal);');
-    sh.fragmentShader = `uniform sampler2D tSolo, tCam, tRocha, tPico, nSolo, nCam, nRocha, nPico; uniform float escala, forcaN;
+    sh.fragmentShader = `uniform sampler2D tSolo, tCam, tRocha, tPico, nSolo, nCam, nRocha, nPico; uniform float escala, forcaN, escalaC;
 varying vec4 vPeso; varying vec3 vPosW; varying vec3 vNormW;
 vec4 gPeso; vec3 gBW;
 ` + sh.fragmentShader
       .replace('#include <map_fragment>', `
   vec2 uvT = vPosW.xz * escala;
   gBW = pow(abs(normalize(vNormW)), vec3(4.0)); gBW /= (gBW.x + gBW.y + gBW.z);
-  vec3 aS = texture2D(tSolo, uvT).rgb;
-  vec3 aC = texture2D(tCam, uvT * 0.9).rgb;
+  // segunda amostra girada e em outra escala, misturada por ruído amplo (esconde a repetição)
+  float varM = smoothstep(0.3, 0.7, texture2D(tPico, uvT * 0.031 + 0.17).r);
+  vec2 uvR = mat2(0.8, -0.6, 0.6, 0.8) * uvT * 0.61 + 0.37;
+  vec3 aS = mix(texture2D(tSolo, uvT).rgb, texture2D(tSolo, uvR).rgb, varM);
+  vec3 aC = mix(texture2D(tCam, uvT * 0.9).rgb, texture2D(tCam, uvR * 0.9).rgb, varM * escalaC);
   vec3 aP = texture2D(tPico, uvT * 0.6).rgb;
   vec3 aR = texture2D(tRocha, vPosW.zy * escala * 0.55).rgb * gBW.x + texture2D(tRocha, vPosW.xz * escala * 0.55).rgb * gBW.y + texture2D(tRocha, vPosW.xy * escala * 0.55).rgb * gBW.z;
   // mistura por altura (bordas naturais entre camadas)
   vec4 hh = vec4(aS.g, aC.g, aR.g, aP.g);
-  gPeso = vPeso * (0.35 + hh * 1.3); gPeso = pow(gPeso, vec4(3.0)); gPeso /= max(1e-4, gPeso.x + gPeso.y + gPeso.z + gPeso.w);
+  vec4 vp = vPeso; vp.z *= smoothstep(0.97, 0.86, normalize(vNormW).y); vp.x += 1e-3;
+  gPeso = vp * (0.35 + hh * 1.3); gPeso = pow(gPeso, vec4(3.0)); gPeso /= max(1e-4, gPeso.x + gPeso.y + gPeso.z + gPeso.w);
   vec3 det = aS * gPeso.x + aC * gPeso.y + aR * gPeso.z + aP * gPeso.w;
   float macro = texture2D(tSolo, uvT * 0.045).r * 0.6 + texture2D(tPico, uvT * 0.11 + 0.3).r * 0.4;
   diffuseColor.rgb *= det * 2.1 * mix(0.75, 1.25, macro);
@@ -225,7 +266,7 @@ vec4 gPeso; vec3 gBW;
   }
 `);
   };
-  m.customProgramCacheKey = () => 'terreno_v1';
+  m.userData.U = U; m.customProgramCacheKey = () => 'terreno_v2';
   return m;
 };
 
@@ -267,9 +308,10 @@ GFX.criarGrama = function (mundo) {
       float vento = sin(tempo * 1.6 + wpG.x * 0.31 + wpG.z * 0.22) * 0.18 + sin(tempo * 3.7 + wpG.x * 1.1) * 0.05;
       transformed.x += vento * hG; transformed.z += vento * 0.5 * hG;`);
     // escurece a base (oclusão)
-    sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n diffuseColor.rgb *= mix(0.55, 1.35, vUv.y);');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n diffuseColor.rgb *= mix(0.55, 1.35, vUv.y);')
+      .replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>\n normal = normalize((viewMatrix * vec4(0.15, 1.0, 0.1, 0.0)).xyz);');
   };
-  mat.customProgramCacheKey = () => 'grama_v1';
+  mat.customProgramCacheKey = () => 'grama_v2';
   const im = new THREE.InstancedMesh(GFX.geoGrama, mat, n);
   const rnd = mulberry32(mundo.TAM | 0);
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3(), cor = new THREE.Color();

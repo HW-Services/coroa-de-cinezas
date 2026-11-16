@@ -312,6 +312,7 @@ ENG.construirMundo = function (biomaId, seed, opcoes = {}) {
   const pesoCam = new Float32Array(N * N);
   const cChao = new THREE.Color(B.chao), cCam = new THREE.Color(B.caminho), cEnc = new THREE.Color(B.encosta), cPico = new THREE.Color(B.pico);
   const cLava = new THREE.Color(0x401008), cAreia = new THREE.Color(0xa89870);
+  if (opcoes.cidade) cCam.lerp(new THREE.Color(0x8e8a82), 0.55);
   const tmp = new THREE.Color();
   for (let k = 0; k < pos.count; k++) {
     const px = pos.getX(k), pz = pos.getZ(k);
@@ -350,7 +351,7 @@ ENG.construirMundo = function (biomaId, seed, opcoes = {}) {
   geo.setAttribute('peso', new THREE.BufferAttribute(pesos, 4));
   geo.computeVertexNormals();
   mundo.pesoCaminho = (x, z) => amostra(pesoCam, x, z);
-  const matT = GFX.materialTerreno(biomaId);
+  const matT = GFX.materialTerreno(biomaId, !!opcoes.cidade);
   const terreno = new THREE.Mesh(geo, matT);
   terreno.receiveShadow = true;
   ENG.scene.add(terreno); mundo.objetos.push(terreno);
@@ -516,6 +517,7 @@ function initDecor() {
     { g: cil, m: matDec(0x3a3430, { metalness: 0.6, roughness: 0.5 }), mx: M4(0, 0.6, 0, 0, 0, 0, 0.12, 1.2, 0.12) },
     { g: esf, m: matDec(0x3a3430, { metalness: 0.6, roughness: 0.5, side: THREE.DoubleSide }), mx: M4(0, 1.5, 0, Math.PI, 0, 0, 0.55, 0.35, 0.55) },
   ] };
+  D3.registrar();
 }
 
 function construirDecoracao(mundo, rnd) {
@@ -536,7 +538,8 @@ function construirDecoracao(mundo, rnd) {
     const d = DECOR[tipo]; if (!d) continue;
     const s = d.esc[0] + rnd() * (d.esc[1] - d.esc[0]);
     const m = M4(x, h - 0.1, z, (rnd() - 0.5) * 0.1, rnd() * Math.PI * 2, (rnd() - 0.5) * 0.1, s, s, s);
-    (porTipo[tipo] = porTipo[tipo] || []).push(m);
+    const chave = d.variantes ? tipo + '#' + Math.floor(rnd() * d.variantes.length) : tipo;
+    (porTipo[chave] = porTipo[chave] || []).push(m);
   }
   // braseiros ao redor da arena final
   const f = mundo.fim;
@@ -546,17 +549,36 @@ function construirDecoracao(mundo, rnd) {
     const a = i / 6 * Math.PI * 2, x = f.x + Math.cos(a) * f.r * 0.85, z = f.z + Math.sin(a) * f.r * 0.85;
     const h = mundo.h(x, z); porTipo.braseiro.push(M4(x, h, z)); mundo.braseiros.push(new THREE.Vector3(x, h + 1.7, z));
   }
-  for (const [tipo, mats] of Object.entries(porTipo)) {
-    const d = DECOR[tipo];
-    for (const p of d.partes) {
-      const im = new THREE.InstancedMesh(p.g, p.m, mats.length);
-      const tmp = new THREE.Matrix4();
-      const cv = new THREE.Color(); const rv = mulberry32(mats.length * 31 + tipo.length);
-      mats.forEach((m, i) => { tmp.multiplyMatrices(m, p.mx); im.setMatrixAt(i, tmp); if (!p.m.emissive || p.m.emissiveIntensity < 1) { const k = 0.78 + rv() * 0.4; cv.setRGB(k * (0.95 + rv() * 0.1), k, k * (0.95 + rv() * 0.1)); im.setColorAt(i, cv); } });
-      if (im.instanceColor) im.instanceColor.needsUpdate = true;
-      im.castShadow = !p.m.emissive || p.m.emissiveIntensity < 1; im.receiveShadow = true;
-      im.instanceMatrix.needsUpdate = true;
-      ENG.scene.add(im); mundo.objetos.push(im);
+  // instâncias agrupadas em blocos espaciais (cada bloco com a própria esfera de recorte)
+  const BLOCO = 70;
+  for (const [chave, mats] of Object.entries(porTipo)) {
+    const [tipo, vi] = chave.split('#'); const d = DECOR[tipo];
+    const partes = vi !== undefined ? d.variantes[+vi] : d.partes;
+    const blocos = {};
+    for (const m of mats) { const bx = Math.floor(m.elements[12] / BLOCO), bz = Math.floor(m.elements[14] / BLOCO); (blocos[bx + ',' + bz] = blocos[bx + ',' + bz] || []).push(m); }
+    let nb = 0;
+    for (const lista of Object.values(blocos)) {
+      nb++;
+      // centro e raio do bloco
+      let cx = 0, cy = 0, cz = 0; for (const m of lista) { cx += m.elements[12]; cy += m.elements[13]; cz += m.elements[14]; }
+      cx /= lista.length; cy /= lista.length; cz /= lista.length;
+      let raio = 0; for (const m of lista) raio = Math.max(raio, Math.hypot(m.elements[12] - cx, m.elements[13] - cy, m.elements[14] - cz));
+      for (const p of partes) {
+        if (!p.g.boundingSphere) p.g.computeBoundingSphere();
+        const g = new THREE.BufferGeometry();
+        for (const nome in p.g.attributes) g.setAttribute(nome, p.g.attributes[nome]);
+        g.index = p.g.index; g.userData.cache = true;
+        g.boundingSphere = new THREE.Sphere(new THREE.Vector3(cx, cy, cz), raio + (p.g.boundingSphere.radius + p.g.boundingSphere.center.length()) * 2.8);
+        const im = new THREE.InstancedMesh(g, p.m, lista.length);
+        const tmp = new THREE.Matrix4();
+        const cv = new THREE.Color(); const rv = mulberry32(lista.length * 31 + tipo.length + nb * 7);
+        const brilha = p.m.emissive && p.m.emissiveIntensity >= 1;
+        lista.forEach((m, i) => { tmp.multiplyMatrices(m, p.mx); im.setMatrixAt(i, tmp); if (!brilha) { const k = 0.82 + rv() * 0.34; cv.setRGB(k * (0.95 + rv() * 0.1), k, k * (0.95 + rv() * 0.1)); im.setColorAt(i, cv); } });
+        if (im.instanceColor) im.instanceColor.needsUpdate = true;
+        im.castShadow = !brilha; im.receiveShadow = true; im.frustumCulled = true;
+        im.instanceMatrix.needsUpdate = true;
+        ENG.scene.add(im); mundo.objetos.push(im);
+      }
     }
   }
 }
