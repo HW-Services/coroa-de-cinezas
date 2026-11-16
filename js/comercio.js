@@ -254,7 +254,7 @@ EST.forja = function (x, z, ang = 0) {
     mont0(C2, L);
     const m = J.mundo;
     for (const id of fixos) {
-      const N = NPCS[id]; const pos = N.funcao === 'ferreiro' ? L.ferreiro : L.mercador;
+      const N = NPCS[id]; const pos = N.funcao === 'ferreiro' ? L.ferreiro : N.funcao === 'joalheiro' ? L.joalheiro : L.mercador;
       const mm = (N.modelo3d && MOD.criar3D(N.modelo3d, 1.0, N.tinta3d)) || MOD.criar('humanoide', N.visual, 1.0);
       mm.raiz.position.set(pos.x, m.h(pos.x, pos.z), pos.z); ENG.scene.add(mm.raiz);
       m.obst.push({ x: pos.x, z: pos.z, r: 0.6 });
@@ -467,8 +467,8 @@ UI.atualizarForja = function () {
     const box = $('#npcCorpo');
     const c = document.createElement('div'); c.style.cssText = 'display:flex;gap:8px;margin:0 0 14px';
     const b = document.createElement('button'); b.className = 'btn grande';
-    b.textContent = f === 'mercador' ? 'Negociar' : 'Abrir a Forja';
-    b.addEventListener('click', () => f === 'mercador' ? UI.abrirLoja(id) : UI.abrirForja(id));
+    b.textContent = f === 'mercador' ? 'Negociar' : f === 'joalheiro' ? 'Abrir a Joalheria' : 'Abrir a Forja';
+    b.addEventListener('click', () => f === 'mercador' ? UI.abrirLoja(id) : f === 'joalheiro' ? UI.abrirJoalheria(id) : UI.abrirForja(id));
     c.appendChild(b);
     box.insertBefore(c, box.children[1] || null);
   };
