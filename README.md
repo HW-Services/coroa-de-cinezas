@@ -98,3 +98,9 @@ Cada golpe deixa uma marca no inimigo (Em Chamas, Gelado, Eletrizado, Envenenado
 
 ## Jóias e joalheira
 Jóias em cinco qualidades (Lascada, Comum, Impecável, Real, Grandiosa), cada uma com lapidação própria. Em cada cidade há uma joalheira (Íris, Tâmsin e Yasmin) que evolui 3 jóias iguais + ouro em 1 da qualidade seguinte e remove jóias encaixadas de graça.
+
+## Física e inteligência dos monstros
+Personagens, monstros, lacaios e outros jogadores são corpos sólidos que se empurram (chefes e raros são mais pesados). Um monstro que percebe que não está avançando calcula um desvio (busca A* numa grade local) e contorna pedras, árvores e bordas para chegar ao alvo.
+
+## Mapa do Mundo
+O mapa (M) mostra cada ato como uma região ilustrada (costa, brejo, floresta, cavernas, deserto, gelo e vulcão), com estradas, pedras de passagem, cidades, chefes e névoa sobre o que ainda não foi descoberto. Os nomes aparecem ao passar o mouse; clique numa pedra de passagem para viajar.

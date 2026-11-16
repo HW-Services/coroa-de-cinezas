@@ -1054,8 +1054,10 @@ J.atualizarInimigo = function (e, dt) {
       }
     }
     if (quer !== 0) {
-      let dx = alvoX - e.x, dz = alvoZ - e.z; const L = Math.hypot(dx, dz) || 1; dx /= L; dz /= L;
+      const nvP = quer > 0 && J.navAlvo ? J.navAlvo(e, alvoX, alvoZ, dt, vel * Math.min(1, quer + 0.3)) : null;
+      let dx = (nvP ? nvP.x : alvoX) - e.x, dz = (nvP ? nvP.z : alvoZ) - e.z; const L = Math.hypot(dx, dz) || 1; dx /= L; dz /= L;
       if (quer < 0) { dx = -dx; dz = -dz; }
+      if (nvP) quer = 1;
       else if (quer < 1) { const t = dx; dx = -dz * e.strafe; dz = t * e.strafe; if (Math.random() < dt * 0.4) e.strafe *= -1; }
       const kv = quer < 0 ? 0.55 : Math.min(1, quer + 0.3);
       if (J.mover(e, dx * vel * dt * kv, dz * vel * dt * kv, e.raio)) movendo = quer < 0 ? 0.6 : 1;
