@@ -295,10 +295,31 @@ ENG.construirMundo = function (biomaId, seed, opcoes = {}) {
     progresso: (x, z) => amostra(tParam, x, z),
     andavel: (x, z, r = 0.5) => {
       if (!(amostra(borda, x, z) < -r && Math.abs(x) < AREA + 8 && Math.abs(z) < AREA + 8)) return false;
-      for (const o of mundo.obst) if (Math.hypot(x - o.x, z - o.z) < o.r + r) return false;
-      return true;
+      return !mundo.colide(x, z, r);
     },
+    andavelTerreno: (x, z, r = 0.5) => amostra(borda, x, z) < -r && Math.abs(x) < AREA + 8 && Math.abs(z) < AREA + 8,
     obst: [], AREA, cidade: !!opcoes.cidade,
+    // obstáculos indexados numa grade espacial (reindexa quando a lista muda)
+    _grade: null, _nIdx: -1,
+    colide: (x, z, r) => !!mundo.obstaculoEm(x, z, r),
+    obstaculoEm: (x, z, r) => {
+      const ob = mundo.obst;
+      if (mundo._nIdx !== ob.length) {
+        const g = new Map(); const C = 6;
+        for (const o of ob) {
+          const x0 = Math.floor((o.x - o.r) / C), x1 = Math.floor((o.x + o.r) / C), z0 = Math.floor((o.z - o.r) / C), z1 = Math.floor((o.z + o.r) / C);
+          for (let i = x0; i <= x1; i++) for (let j = z0; j <= z1; j++) { const k = i * 4096 + j; let l = g.get(k); if (!l) g.set(k, l = []); l.push(o); }
+        }
+        mundo._grade = g; mundo._nIdx = ob.length;
+      }
+      const C = 6, g = mundo._grade;
+      const x0 = Math.floor((x - r) / C), x1 = Math.floor((x + r) / C), z0 = Math.floor((z - r) / C), z1 = Math.floor((z + r) / C);
+      for (let i = x0; i <= x1; i++) for (let j = z0; j <= z1; j++) {
+        const l = g.get(i * 4096 + j); if (!l) continue;
+        for (const o of l) { const dx = x - o.x, dz = z - o.z, R = o.r + r; if (dx * dx + dz * dz < R * R) return o; }
+      }
+      return null;
+    },
     objetos: [],
   };
   ENG.mundo = mundo;
@@ -520,10 +541,29 @@ function initDecor() {
   D3.registrar();
 }
 
+// raio de colisão (pegada no chão) de cada tipo de decoração, em escala 1
+const COLISAO_DECOR = { pinheiro: 0.42, pinheiroNeve: 0.42, arvore: 0.45, palmeira: 0.32, arvoreMorta: 0.36, arvoreQueimada: 0.36, cacto: 0.34,
+  pilar: 0.72, estalagmite: 0.55, cristal: 0.45, cristalGelo: 0.45, obelisco: 0.75, braseiro: 0.45 };
+function raioColisao(tipo, d, vi) {
+  if (tipo === 'rocha' || tipo === 'rochaVulc') {
+    const v = d.variantes ? d.variantes[Math.max(0, vi)] : d.partes;
+    const g = v[0].g;
+    if (g.userData.rCol === undefined) {
+      const p = g.attributes.position; let soma = 0, n = 0;
+      for (let i = 0; i < p.count; i++) if (p.getY(i) < 0.25) { soma += Math.hypot(p.getX(i), p.getZ(i)); n++; }
+      g.userData.rCol = n ? soma / n * 0.85 : 0.8;
+    }
+    return g.userData.rCol;
+  }
+  return COLISAO_DECOR[tipo] || 0;
+}
 function construirDecoracao(mundo, rnd) {
   if (!DECOR.rocha) initDecor();
   const lista = mundo.B.decor;
   const porTipo = {};
+  // áreas que precisam ficar desimpedidas (chegada/portões, arena do chefe, fim dos ramos)
+  const livres = [{ x: mundo.inicio.x, z: mundo.inicio.z, r: 14 }, { x: mundo.fim.x, z: mundo.fim.z, r: (mundo.fim.r || 10) + 4 }]
+    .concat((mundo.ramos || []).map(r => ({ x: r.fim.x, z: r.fim.z, r: (r.fim.r || 6) + 3 })));
   const tentativas = mundo.cidade ? 2400 : Math.round(5200 * Math.pow(mundo.TAM / 440, 2));
   for (let n = 0; n < tentativas; n++) {
     const x = (rnd() - 0.5) * mundo.TAM * 0.94, z = (rnd() - 0.5) * mundo.TAM * 0.94;
@@ -538,7 +578,18 @@ function construirDecoracao(mundo, rnd) {
     const d = DECOR[tipo]; if (!d) continue;
     const s = d.esc[0] + rnd() * (d.esc[1] - d.esc[0]);
     const m = M4(x, h - 0.1, z, (rnd() - 0.5) * 0.1, rnd() * Math.PI * 2, (rnd() - 0.5) * 0.1, s, s, s);
-    const chave = d.variantes ? tipo + '#' + Math.floor(rnd() * d.variantes.length) : tipo;
+    const vi = d.variantes ? Math.floor(rnd() * d.variantes.length) : -1;
+    const chave = vi >= 0 ? tipo + '#' + vi : tipo;
+    const rc = raioColisao(tipo, d, vi) * s;
+    if (rc > 0 && e < rc + 0.6) {
+      // dentro (ou na beira) da área andável: nunca fechar passagens. Exige folga de 2,2 até outros
+      // obstáculos e não aceita peças "no meio do caminho" perto demais da borda.
+      const fundo = -e;
+      if (fundo > rc * 0.4 && fundo < rc + 2.6) continue;
+      if (mundo.obstaculoEm(x, z, rc + 2.2)) continue;
+      if (livres.some(l => Math.hypot(x - l.x, z - l.z) < l.r + rc)) continue;
+    }
+    if (rc > 0) mundo.obst.push({ x, z, r: rc, decor: tipo });
     (porTipo[chave] = porTipo[chave] || []).push(m);
   }
   // braseiros ao redor da arena final
@@ -547,7 +598,7 @@ function construirDecoracao(mundo, rnd) {
   mundo.braseiros = [];
   for (let i = 0; i < 6; i++) {
     const a = i / 6 * Math.PI * 2, x = f.x + Math.cos(a) * f.r * 0.85, z = f.z + Math.sin(a) * f.r * 0.85;
-    const h = mundo.h(x, z); porTipo.braseiro.push(M4(x, h, z)); mundo.braseiros.push(new THREE.Vector3(x, h + 1.7, z));
+    const h = mundo.h(x, z); porTipo.braseiro.push(M4(x, h, z)); mundo.braseiros.push(new THREE.Vector3(x, h + 1.7, z)); mundo.obst.push({ x, z, r: 0.45 });
   }
   // instâncias agrupadas em blocos espaciais (cada bloco com a própria esfera de recorte)
   const BLOCO = 70;

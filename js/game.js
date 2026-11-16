@@ -763,7 +763,28 @@ J.disparoArea = function (a, y) {
 J.mover = function (ent, dx, dz, raio = 0.5) {
   const m = J.mundo;
   const nx = ent.x + dx, nz = ent.z + dz;
-  if (m.andavel(nx, nz, raio)) { ent.x = nx; ent.z = nz; return true; }
+  if (m.andavel(nx, nz, raio)) { ent.x = nx; ent.z = nz; if (ent._lado && !(m.obstaculoEm && m.obstaculoEm(nx, nz, raio + 0.6))) ent._lado = 0; return true; }
+  // já sobreposto a um obstáculo (nasceu ou foi empurrado para dentro): deixa sair
+  if (m.colide(ent.x, ent.z, raio * 0.9) && m.andavelTerreno(nx, nz, raio)) { ent.x = nx; ent.z = nz; return true; }
+  // contorna obstáculos redondos (árvores, pedras): desliza pela tangente do obstáculo que bloqueou
+  const o = m.obstaculoEm ? m.obstaculoEm(nx, nz, raio) : null;
+  if (o && m.andavelTerreno(nx, nz, raio)) {
+    const L = Math.hypot(dx, dz);
+    let nxn = ent.x - o.x, nzn = ent.z - o.z; const dn = Math.hypot(nxn, nzn) || 1; nxn /= dn; nzn /= dn;
+    const vn = dx * nxn + dz * nzn;
+    let tx = dx - Math.min(0, vn) * nxn, tz = dz - Math.min(0, vn) * nzn;
+    let tl = Math.hypot(tx, tz);
+    if (tl < L * 0.35) { // de frente: escolhe um lado e mantém
+      const lado = ent._lado || ((dx * -nzn + dz * nxn) >= 0 ? 1 : -1);
+      tx = -nzn * lado; tz = nxn * lado; tl = 1; ent._lado = lado;
+    }
+    tx = tx / tl * L; tz = tz / tl * L;
+    let px = ent.x + tx, pz = ent.z + tz;
+    // mantém encostado na borda do obstáculo
+    const ex = px - o.x, ez = pz - o.z, de = Math.hypot(ex, ez) || 1, R = o.r + raio + 0.002;
+    if (de < R) { px = o.x + ex / de * R; pz = o.z + ez / de * R; }
+    if (m.andavel(px, pz, raio)) { ent.x = px; ent.z = pz; return true; }
+  }
   if (m.andavel(nx, ent.z, raio)) { ent.x = nx; return true; }
   if (m.andavel(ent.x, nz, raio)) { ent.z = nz; return true; }
   return false;
