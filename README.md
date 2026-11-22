@@ -110,3 +110,6 @@ O mapa (M) mostra cada ato como uma região ilustrada (costa, brejo, floresta, c
 
 ## Primeira pessoa (Z)
 A tecla **Z** (ou o botão "1ª Pessoa") alterna para a visão em primeira pessoa: o mouse fica travado e controla o olhar, WASD anda na direção para onde se olha, a mira fica no centro da tela e as habilidades são lançadas nela. Abrir um painel solta o mouse; um clique no jogo o trava de novo. Z volta à visão de cima.
+
+## Pele realista dos monstros
+Cada monstro recebe um perfil de superfície no shader (escamas, carapaça, quitina, pelo, penas, osso, pedra, magma, gelo, lodo, pele anfíbia, casca, couro e carne): padrão procedural em projeção triplanar que acompanha a animação, relevo por derivadas, cavidades, brilho úmido ou seco, translucidez nas bordas e veios incandescentes pulsando. Lobos, yetis e feras peludas têm pelagem em camadas (qualidade Alta/Ultra, só perto da câmera).
