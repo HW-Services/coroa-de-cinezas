@@ -107,3 +107,6 @@ O mapa (M) mostra cada ato como uma região ilustrada (costa, brejo, floresta, c
 
 ## A Raiz Primeva (G)
 Árvore passiva extra, comum a todas as classes, alimentada por **Seiva Abissal** (cai de monstros mágicos, raros e chefes e é coletada automaticamente). São 101 nós em quatro ramos (Fúria, Carapaça, Colheita e Arcano), cada um com um Núcleo de efeito especial (dano das reações de combo, redução de dano e espinhos, jóias extras e mais seiva, chance de não gastar recurso) e grupos com nós notáveis. Cada nó custa um pouco mais que o anterior; nós da ponta podem ser devolvidos de graça e "Restituir passivas" devolve toda a seiva por um pouco de ouro. Há busca por texto para destacar nós.
+
+## Primeira pessoa (Z)
+A tecla **Z** (ou o botão "1ª Pessoa") alterna para a visão em primeira pessoa: o mouse fica travado e controla o olhar, WASD anda na direção para onde se olha, a mira fica no centro da tela e as habilidades são lançadas nela. Abrir um painel solta o mouse; um clique no jogo o trava de novo. Z volta à visão de cima.

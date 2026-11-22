@@ -873,6 +873,7 @@ J.atualizarJogador = function (dt) {
     if (inp.teclas.KeyA || inp.teclas.ArrowLeft) mx -= 1;
     if (inp.teclas.KeyD || inp.teclas.ArrowRight) mx += 1;
   }
+  if ((mx || mz) && J.ajusteMov) { const r = J.ajusteMov(mx, mz); mx = r[0]; mz = r[1]; }
   if (mx || mz) jg.irPara = null;
   if (jg.irPara) {
     const d = jg.irPara; const dx = d.x - jg.x, dz = d.z - jg.z; const L = Math.hypot(dx, dz);
