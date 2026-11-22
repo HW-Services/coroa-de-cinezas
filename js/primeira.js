@@ -40,7 +40,7 @@ window.addEventListener('mousemove', (e) => {
   if (!PP.ativo) return;
   if (PP.travado()) {
     PP.yaw -= e.movementX * PP.sens;
-    PP.pitch = clamp(PP.pitch - e.movementY * PP.sens, -1.35, 1.2);
+    PP.pitch = clamp(PP.pitch - e.movementY * PP.sens * (PP.inverter ? -1 : 1), -1.35, 1.2);
   }
   // a mira (e o "mouse" do jogo) fica no centro da tela
   J.input.mx = window.innerWidth / 2; J.input.my = window.innerHeight / 2;
@@ -137,4 +137,41 @@ J.ajusteMov = function (mx, mz) {
   const d = document.createElement('div'); d.id = 'ppDica'; d.hidden = true; d.textContent = 'Clique no jogo para controlar a câmera (Z volta à visão de cima)'; document.body.appendChild(d);
   const ref = document.getElementById('bRaiz') || document.getElementById('bPet');
   if (ref) { const b = document.createElement('button'); b.className = 'bmenu'; b.id = 'bPP'; b.textContent = '1ª Pessoa (Z)'; b.addEventListener('click', () => PP.alternar()); ref.before(b); }
+}
+
+// ---------------- ajuste no Menu (Esc): sensibilidade e eixo vertical ----------------
+PP.SENS_MIN = 0.0006; PP.SENS_MAX = 0.0096; PP.SENS_PADRAO = 0.0024;
+try { PP.inverter = localStorage.getItem('cdc_pp_inv') === '1'; } catch (e) { }
+// escala de 1 a 100 (50 = padrão)
+PP.sensParaNivel = (s) => Math.max(1, Math.min(100, Math.round(50 + 50 * Math.log(s / PP.SENS_PADRAO) / Math.log(4))));
+PP.nivelParaSens = (n) => PP.SENS_PADRAO * Math.pow(4, (n - 50) / 50);
+PP.salvarAjustes = () => { try { localStorage.setItem('cdc_pp_sens', String(PP.sens)); localStorage.setItem('cdc_pp_inv', PP.inverter ? '1' : '0'); } catch (e) { } };
+{
+  const menu = document.querySelector('#modalMenu .corpo');
+  if (menu) {
+    const st = document.createElement('style');
+    st.textContent = `.ppAjuste{display:grid;grid-template-columns:auto 1fr auto;gap:8px 12px;align-items:center;font-size:14px}
+    .ppAjuste input[type=range]{width:100%;accent-color:#c8a060}
+    .ppAjuste output{min-width:34px;text-align:right;color:#ffe0a0;font-variant-numeric:tabular-nums}
+    .ppAjuste label.chk{grid-column:1 / -1;display:flex;gap:8px;align-items:center;cursor:pointer}`;
+    document.head.appendChild(st);
+    const d = document.createElement('div');
+    d.innerHTML = `<div class="statT" style="margin-top:0">Câmera em primeira pessoa</div>
+      <div class="ppAjuste">
+        <span>Sensibilidade do mouse</span><input type="range" id="ppSens" min="1" max="100" step="1" aria-label="Sensibilidade do mouse"><output id="ppSensV"></output>
+        <label class="chk"><input type="checkbox" id="ppInv"> Inverter eixo vertical</label>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:6px"><button class="btn sec" id="ppPadrao" type="button">Restaurar padrão</button><span class="dica" style="margin:0">Vale para a visão em primeira pessoa (tecla Z). 50 é o padrão.</span></div>`;
+    const ref = document.getElementById('controles');
+    ref ? menu.insertBefore(d, ref) : menu.appendChild(d);
+    const r = d.querySelector('#ppSens'), o = d.querySelector('#ppSensV'), inv = d.querySelector('#ppInv');
+    const mostrar = () => { r.value = PP.sensParaNivel(PP.sens); o.textContent = r.value; inv.checked = !!PP.inverter; };
+    r.addEventListener('input', () => { PP.sens = PP.nivelParaSens(+r.value); o.textContent = r.value; PP.salvarAjustes(); });
+    r.addEventListener('keydown', (e) => e.stopPropagation());
+    inv.addEventListener('change', () => { PP.inverter = inv.checked; PP.salvarAjustes(); });
+    d.querySelector('#ppPadrao').addEventListener('click', () => { PP.sens = PP.SENS_PADRAO; PP.inverter = false; PP.salvarAjustes(); mostrar(); });
+    mostrar();
+    // atualiza sempre que o menu abre
+    new MutationObserver(() => { if (!document.getElementById('modalMenu').hidden) mostrar(); }).observe(document.getElementById('modalMenu'), { attributes: true, attributeFilter: ['hidden'] });
+  }
 }
