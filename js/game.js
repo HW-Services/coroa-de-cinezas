@@ -444,7 +444,7 @@ J.tentarConjurar = function (id) {
   if (!sk.rank) return false;
   if ((jg.cds[id] || 0) > 0) return false;
   if (sk.custo && jg.rec < sk.custo) { if (!jg.avisoRec || J.tempo - jg.avisoRec > 1.2) { jg.avisoRec = J.tempo; J.texto(jg.x, jg.y + 2.4, jg.z, `Sem ${CLASSES[J.pers.classe].recurso.nome}`, '#a0b0ff', 13); } return false; }
-  jg.rec -= sk.custo;
+  if (!(J.st.economia && Math.random() * 100 < J.st.economia)) jg.rec -= sk.custo;
   const alvo = J.input.alvo.clone();
   const vel = sk.tipo === 'buff' || sk.tipo === 'investida' || sk.tipo === 'salto' || sk.tipo === 'teleporte' ? 1 : J.st.velAtaque;
   const dur = Math.max(0.12, sk.tempo / vel);

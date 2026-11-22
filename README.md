@@ -104,3 +104,6 @@ Personagens, monstros, lacaios e outros jogadores são corpos sólidos que se em
 
 ## Mapa do Mundo
 O mapa (M) mostra cada ato como uma região ilustrada (costa, brejo, floresta, cavernas, deserto, gelo e vulcão), com estradas, pedras de passagem, cidades, chefes e névoa sobre o que ainda não foi descoberto. Os nomes aparecem ao passar o mouse; clique numa pedra de passagem para viajar.
+
+## A Raiz Primeva (G)
+Árvore passiva extra, comum a todas as classes, alimentada por **Seiva Abissal** (cai de monstros mágicos, raros e chefes e é coletada automaticamente). São 101 nós em quatro ramos (Fúria, Carapaça, Colheita e Arcano), cada um com um Núcleo de efeito especial (dano das reações de combo, redução de dano e espinhos, jóias extras e mais seiva, chance de não gastar recurso) e grupos com nós notáveis. Cada nó custa um pouco mais que o anterior; nós da ponta podem ser devolvidos de graça e "Restituir passivas" devolve toda a seiva por um pouco de ouro. Há busca por texto para destacar nós.
