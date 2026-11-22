@@ -1060,7 +1060,7 @@ J.atualizarInimigo = function (e, dt) {
       if (nvP) quer = 1;
       else if (quer < 1) { const t = dx; dx = -dz * e.strafe; dz = t * e.strafe; if (Math.random() < dt * 0.4) e.strafe *= -1; }
       const kv = quer < 0 ? 0.55 : Math.min(1, quer + 0.3);
-      if (J.mover(e, dx * vel * dt * kv, dz * vel * dt * kv, e.raio)) movendo = quer < 0 ? 0.6 : 1;
+      if ((J.moverIA || J.mover)(e, dx * vel * dt * kv, dz * vel * dt * kv, e.raio, dt)) movendo = quer < 0 ? 0.6 : 1;
       else e.strafe *= -1;
       // sempre de frente para o alvo (recua dando passos para trás)
       e.ang += angDif(angAlvo, e.ang) * (1 - Math.exp(-dt * 8));
@@ -1249,7 +1249,7 @@ J.atualizarLacaios = function (dt) {
     let movendo = 0;
     if (l.atq) {
       l.atq.t += dt; const k = l.atq.t / l.atq.dur;
-      if (!l.atq.feito && k > 0.5) { l.atq.feito = true; if (alvo && dist2(alvo, l) < 2.4 + alvo.raio) J.acertarInimigo(alvo, l.sk.mult * (1 + J.st.lacaioDano / 100), { elem: 'fisico', multRank: l.sk.multRank }, { semVPG: true }); }
+      if (!l.atq.feito && k > 0.5) { l.atq.feito = true; if (alvo && dist2(alvo, l) < 2.4 + alvo.raio) J.acertarInimigo(alvo, l.sk.mult * (1 + J.st.lacaioDano / 100), { elem: 'fisico', multRank: l.sk.multRank }, { semVPG: true, origem: l }); }
       if (k >= 1) l.atq = null;
     } else if (alvo) {
       if (bd > 1.6 + alvo.raio) { const dx = (alvo.x - l.x) / bd, dz = (alvo.z - l.z) / bd; if (J.mover(l, dx * 6.5 * dt, dz * 6.5 * dt, 0.4)) movendo = 1; l.fase += dt * 10; }

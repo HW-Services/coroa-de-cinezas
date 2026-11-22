@@ -237,6 +237,7 @@ COOP.aplicarDano = function (x) {
   e.vida -= d; e.flash = 1;
   if (e.estado === 'dormindo') J.acordar(e);
   const l = num(x[2], 0); if (l > 0) { e.lentoT = 2.5; e.lentoF = Math.max(e.lentoF, Math.min(0.8, l)); }
+  if (J.impulso) { const kx = Math.max(-12, Math.min(12, num(x[3], 0))), kz = Math.max(-12, Math.min(12, num(x[4], 0))); if (kx || kz) J.impulso(e, kx, kz); }
   if (e.vida <= 0) J.matarInimigo(e);
 };
 COOP.morte = function (n) {
@@ -287,7 +288,7 @@ COOP.atualizar = function () {
   if (!COOP.souHost) {
     if (COOP.pendente.size && agora - COOP.ultimoDano > 150) {
       COOP.ultimoDano = agora;
-      const d = []; for (const [n, p] of COOP.pendente) d.push([n, Math.round(p.d * 10) / 10, Math.round(p.l * 100) / 100]);
+      const d = []; for (const [n, p] of COOP.pendente) d.push([n, Math.round(p.d * 10) / 10, Math.round(p.l * 100) / 100, Math.round((p.kx || 0) * 100) / 100, Math.round((p.kz || 0) * 100) / 100]);
       COOP.pendente.clear(); COOP.enviar('d', { d });
     }
     return;
