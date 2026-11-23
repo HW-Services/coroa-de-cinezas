@@ -11,11 +11,11 @@ concurrency:
   group: pages
   cancel-in-progress: true
 jobs:
-  publicar:
+  # montagem e publicação em jobs separados (modelo oficial do GitHub):
+  # evita a falha "No artifacts named github-pages" quando a publicação
+  # procura o pacote logo depois do envio
+  montar:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - name: Montar o site
@@ -27,5 +27,12 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+  publicar:
+    needs: montar
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
       - id: deploy
         uses: actions/deploy-pages@v4
