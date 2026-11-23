@@ -19,6 +19,13 @@ const ESC = {
   SUAVE: 0.04,            // raio da união suave (fração do tamanho do monstro)
   FORA: ['slime', 'chefeSlime', 'elemental', 'voador'], // translúcidos e asas finas ficam como estão
 };
+// ajustes por monstro: suave = fusão (fração do tamanho), encolher = afina a superfície (em células), brilho = cor
+const ESC_AJUSTES = {
+  demonio: { suave: 0.018, encolher: 0.55 },
+  vorthak: { suave: 0.018, encolher: 0.55 },
+  diabrete: { suave: 0.025, encolher: 0.35 },
+  yeti: { brilho: 0.5 },
+};
 try { if (localStorage.getItem('cdc_esculpir_off') === '1') ESC.ativo = false; } catch (e) { }
 
 // ---------- forma de cada peça ----------
@@ -78,7 +85,7 @@ function pecaEsculpivel(o, voxel) {
 }
 
 // ---------- construção ----------
-ESC.construir = function (m, chave) {
+ESC.construir = function (m, chave, aj = {}) {
   const t0 = performance.now();
   const raiz = m.raiz;
   // calcula no espaço da raiz, em escala 1
@@ -94,7 +101,8 @@ ESC.construir = function (m, chave) {
   const pecas = todas.filter(o => pecaEsculpivel(o, voxel));
   if (pecas.length < 3) { restaurar(); return null; }
   const formas = pecas.map(formaDaPeca);
-  const k = maior * ESC.SUAVE;
+  const k = maior * (aj.suave != null ? aj.suave : ESC.SUAVE);
+  const encolher = (aj.encolher || 0) * voxel;
   // caixas de cada peça (para pular as distantes)
   for (const f of formas) { const b = new THREE.Box3().setFromObject(f.o); b.expandByScalar(k * 1.2 + voxel); f.bb = b; }
   const bb = new THREE.Box3(); for (const f of formas) bb.union(f.bb);
@@ -106,7 +114,7 @@ ESC.construir = function (m, chave) {
       const b = f.bb; if (x < b.min.x || x > b.max.x || y < b.min.y || y > b.max.y || z < b.min.z || z > b.max.z) continue;
       d = smin(d, distPeca(f, x, y, z), k);
     }
-    return d === 1e9 ? voxel * 4 : d;
+    return d === 1e9 ? voxel * 4 : d + encolher;
   };
   // grade pré-calculada (o Surface Nets consulta cada canto várias vezes)
   const nx = dims[0] + 1, ny = dims[1] + 1, nz = dims[2] + 1;
@@ -145,7 +153,7 @@ ESC.construir = function (m, chave) {
       corT.copy(formas[j].o.material.color); r += corT.r * w; gg += corT.g * w; b2 += corT.b * w; wt += w;
       const gi = formas[j].gi; pg.set(gi, (pg.get(gi) || 0) + Math.exp(-(ds[j] - dmin) / (kc * 0.7)));
     }
-    cor.set([r / wt, gg / wt, b2 / wt], i * 3);
+    const br = aj.brilho || 1; cor.set([r / wt * br, gg / wt * br, b2 / wt * br], i * 3);
     const ord = [...pg.entries()].sort((a, b) => b[1] - a[1]).slice(0, 2); const soma = ord.reduce((s, a) => s + a[1], 0);
     ord.forEach(([gi, w], k2) => { sIdx[i * 4 + k2] = gi; sPeso[i * 4 + k2] = w / soma; });
   }
@@ -196,10 +204,11 @@ ESC.aplicar = function (m, molde) {
 };
 
 ESC.processar = function (m, rig, visual) {
+  const tipo = ESC.tipoAtual; const aj = (tipo && ESC_AJUSTES[tipo]) || {};
   if (!ESC.ativo || !m || !m.raiz || ESC.FORA.includes(rig) || !window.surfaceNet) return;
-  const chave = rig + '|' + JSON.stringify(visual || {}) + '|' + (() => { let n = 0; m.raiz.traverse(o => { if (o.isMesh) n++; }); return n; })();
+  const chave = (ESC_AJUSTES[tipo] ? tipo : '') + '|' + rig + '|' + JSON.stringify(visual || {}) + '|' + (() => { let n = 0; m.raiz.traverse(o => { if (o.isMesh) n++; }); return n; })();
   let molde = ESC.cache.get(chave);
-  if (molde === undefined) { try { molde = ESC.construir(m, chave); } catch (err) { console.warn('escultura', rig, err); molde = null; } ESC.cache.set(chave, molde); }
+  if (molde === undefined) { try { molde = ESC.construir(m, chave, aj); } catch (err) { console.warn('escultura', rig, err); molde = null; } ESC.cache.set(chave, molde); }
   if (molde) { try { ESC.aplicar(m, molde); } catch (err) { console.warn('escultura', err); } }
 };
 
@@ -210,4 +219,11 @@ ESC.processar = function (m, rig, visual) {
     ESC.processar(m, rig, visual);
     return m;
   };
+}
+
+// qual monstro está sendo criado (para os ajustes por tipo)
+{
+  const ci0 = J.criarInimigo, cc0 = J.criarChefe;
+  J.criarInimigo = function (tipo) { ESC.tipoAtual = tipo; try { return ci0.apply(this, arguments); } finally { ESC.tipoAtual = null; } };
+  J.criarChefe = function (id) { ESC.tipoAtual = id; try { return cc0.apply(this, arguments); } finally { ESC.tipoAtual = null; } };
 }
