@@ -151,6 +151,13 @@ Cada monstro recebe um perfil de superfície no shader (escamas, carapaça, quit
   - **Analógico direito:** rolar a lista ou dar zoom no mapa.
 - **Campos de texto na versão Steam:** abrem o teclado na tela (Steam Deck / Big Picture).
 
+**Monstros esculpidos** (`js/esculpir.js`): os monstros montados com peças (caranguejo, sapo, aranha, escorpião, golem, Ent, yeti, diabrete, demônio e os chefes procedurais) viram uma malha única e orgânica:
+- cada peça vira um campo de distância, e as peças se fundem com união suave;
+- a superfície é extraída com Surface Nets;
+- a malha é presa aos grupos animados (skinning), e as cores se misturam entre as partes.
+
+Olhos, armas, peças brilhantes, transparentes ou finas ficam como eram. Cada tipo é calculado uma vez (cerca de 0,1 s) e reaproveitado. Para comparar com o original, grave `cdc_esculpir_off = 1` no localStorage.
+
 **Proporções dos personagens:** os modelos estilizados (heróis, NPCs, esqueletos) ganham proporção adulta (cabeça menor, pernas e braços mais longos) por escala dos ossos em `js/animacao.js` (tabela `PROPORCOES`). Use `proporcao: false` num modelo para manter o original.
 
 **Publicação:** o passo a passo está em [docs/STEAM.md](docs/STEAM.md).

@@ -145,7 +145,7 @@ PELE.patch = function (mat, P, dens) {
     sh.vertexShader = 'varying vec3 vPosPele;\nvarying vec3 vNorPele;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvPosPele = position;\nvNorPele = normalize(objectNormal);');
     sh.fragmentShader = `uniform sampler2D tPele; uniform float uDens, uBump, uCav, uSssK, uBrilhoK, uTempo; uniform vec3 uSss, uBrilho, uRim;
 varying vec3 vPosPele; varying vec3 vNorPele;
-vec3 gPele; float hPele;
+vec3 gPele; float hPele; float kLodPele;
 vec3 amostraPele(vec3 p, vec3 n) {
   vec3 w = pow(abs(n), vec3(4.0)); w /= (w.x + w.y + w.z + 1e-5);
   return texture2D(tPele, p.zy).rgb * w.x + texture2D(tPele, p.xz).rgb * w.y + texture2D(tPele, p.xy).rgb * w.z;
@@ -153,8 +153,10 @@ vec3 amostraPele(vec3 p, vec3 n) {
 ` + sh.fragmentShader
       .replace('#include <map_fragment>', `#include <map_fragment>
   gPele = amostraPele(vPosPele * uDens, normalize(vNorPele));
-  hPele = gPele.r;
-  diffuseColor.rgb *= mix(uCav, 1.0, smoothstep(0.1, 0.7, gPele.r)) * (0.7 + gPele.g * 0.8);`)
+  // longe da câmera o padrão fica menor que um pixel: atenua relevo e cavidades (sem granulação)
+  kLodPele = 1.0 - smoothstep(0.012, 0.05, length(fwidth(vPosPele * uDens)));
+  hPele = mix(0.5, gPele.r, kLodPele);
+  diffuseColor.rgb *= mix(mix(uCav, 1.0, 0.55), mix(uCav, 1.0, smoothstep(0.1, 0.7, gPele.r)), kLodPele) * mix(1.1, 0.7 + gPele.g * 0.8, kLodPele);`)
       .replace('#include <roughnessmap_fragment>', `float roughnessFactor = roughness * mix(1.2, 0.8, hPele);`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
   {
@@ -163,7 +165,7 @@ vec3 amostraPele(vec3 p, vec3 n) {
     vec3 pR1 = cross(pDy, normal), pR2 = cross(normal, pDx);
     float pDet = dot(pDx, pR1);
     vec3 pGrad = sign(pDet) * (pHx * pR1 + pHy * pR2);
-    normal = normalize(abs(pDet) * normal - pGrad * uBump * 0.3);
+    normal = normalize(abs(pDet) * normal - pGrad * uBump * 0.3 * kLodPele);
   }`)
       .replace('#include <dithering_fragment>', `
   float rimP = 1.0 - clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0);
@@ -172,13 +174,13 @@ vec3 amostraPele(vec3 p, vec3 n) {
   gl_FragColor.rgb += uBrilho * uBrilhoK * gPele.b * (0.75 + 0.25 * sin(uTempo * 2.6 + vPosPele.y * 4.0));
   #include <dithering_fragment>`);
   };
-  mat.customProgramCacheKey = () => 'pele_v1';
+  mat.customProgramCacheKey = () => 'pele_v2';
   mat.needsUpdate = true;
 };
 
 // ---------- pelagem em camadas ----------
 PELE.matPelo = function (base, camada, n, raioObj) {
-  const m = new THREE.MeshStandardMaterial({ color: base.color.clone(), roughness: 0.9, metalness: 0, transparent: false, alphaTest: 0.5, side: THREE.FrontSide });
+  const m = new THREE.MeshStandardMaterial({ color: base.color.clone(), vertexColors: !!base.vertexColors, roughness: 0.9, metalness: 0, transparent: false, alphaTest: 0.5, side: THREE.FrontSide });
   // camadas mais próximas da pele ficam mais densas (fios afinam para a ponta)
   const U = { uDesl: { value: Math.pow(camada / n, 1.1) * 0.026 * raioObj }, uK: { value: camada / n }, uDens: { value: 44 / Math.max(0.05, raioObj) } };
   m.onBeforeCompile = (sh) => {
