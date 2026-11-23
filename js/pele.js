@@ -105,7 +105,7 @@ const PERFIS_PELE = {
   escamas: { tex: 'escamas', dens: 7, bump: 1.4, cav: 0.55, rug: 0.45, met: 0.05, sss: [0xff8060, 0.12] },
   carapaca: { tex: 'carapaca', dens: 2.6, bump: 1.8, cav: 0.5, rug: 0.32, met: 0.08, sss: [0xff9070, 0.08] },
   quitina: { tex: 'quitina', dens: 3.2, bump: 1.6, cav: 0.45, rug: 0.28, met: 0.15, sss: [0x8060ff, 0.06] },
-  pelo: { tex: 'pelo', dens: 5, bump: 0.9, cav: 0.6, rug: 0.92, met: 0, sss: [0xffd0b0, 0.05], pelo: 6 },
+  pelo: { tex: 'pelo', dens: 3.2, bump: 0.45, cav: 0.4, rug: 0.92, met: 0, sss: [0xffd0b0, 0.05], pelo: 9 },
   penas: { tex: 'penas', dens: 5, bump: 1.1, cav: 0.55, rug: 0.8, met: 0, sss: [0xffe0c0, 0.04] },
   osso: { tex: 'osso', dens: 1.8, bump: 0.7, cav: 0.4, rug: 0.62, met: 0, sss: [0xfff0d0, 0.06] },
   ossoUmido: { tex: 'osso', dens: 1.8, bump: 0.7, cav: 0.45, rug: 0.35, met: 0, sss: [0x60c0a0, 0.1] },
@@ -178,18 +178,42 @@ vec3 amostraPele(vec3 p, vec3 n) {
 
 // ---------- pelagem em camadas ----------
 PELE.matPelo = function (base, camada, n, raioObj) {
-  const m = new THREE.MeshStandardMaterial({ color: base.color.clone().multiplyScalar(0.75 + 0.3 * camada / n), roughness: 0.95, metalness: 0, transparent: false, alphaTest: 0.5 });
-  const U = { uDesl: { value: (camada / n) * 0.055 * raioObj }, uK: { value: camada / n }, uDens: { value: 38 / Math.max(0.05, raioObj) } };
+  const m = new THREE.MeshStandardMaterial({ color: base.color.clone(), roughness: 0.9, metalness: 0, transparent: false, alphaTest: 0.5, side: THREE.FrontSide });
+  // camadas mais próximas da pele ficam mais densas (fios afinam para a ponta)
+  const U = { uDesl: { value: Math.pow(camada / n, 1.1) * 0.026 * raioObj }, uK: { value: camada / n }, uDens: { value: 44 / Math.max(0.05, raioObj) } };
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, U);
-    sh.vertexShader = 'uniform float uDesl;\nvarying vec3 vPosPelo;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\ntransformed += normalize(objectNormal) * uDesl;\ntransformed.y -= uDesl * uDesl * 6.0;\nvPosPelo = position;');
-    sh.fragmentShader = 'uniform float uK, uDens;\nvarying vec3 vPosPelo;\nfloat hashP(vec3 p){ p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }\n' + sh.fragmentShader
-      .replace('#include <alphatest_fragment>', `
-  float fio = hashP(floor(vPosPelo * uDens));
-  if (fio < uK * 0.92 + 0.05) discard;
-  diffuseColor.rgb *= 0.55 + uK * 0.6;`);
+    sh.vertexShader = 'uniform float uDesl, uK;\nvarying vec3 vPosPelo; varying vec3 vNorPelo;\n' + sh.vertexShader.replace('#include <begin_vertex>',
+      '#include <begin_vertex>\nvec3 nP = normalize(objectNormal);\ntransformed += nP * uDesl;\ntransformed.y -= uDesl * uK * 0.9; /* os fios caem com o próprio peso */\nvPosPelo = position; vNorPelo = nP;');
+    sh.fragmentShader = `uniform float uK, uDens;
+varying vec3 vPosPelo; varying vec3 vNorPelo;
+vec2 hashF(vec2 p) { p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3))); return fract(sin(p) * 43758.5453); }
+// fio mais próximo: distância ao centro do fio e um número aleatório do fio
+vec2 fioMaisProximo(vec2 q) {
+  vec2 c = floor(q), f = fract(q); float d = 9.0, h = 0.0;
+  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+    vec2 g = vec2(float(x), float(y)); vec2 o = hashF(c + g); vec2 r = g + o * 0.85 + 0.075 - f; float dd = dot(r, r);
+    if (dd < d) { d = dd; h = fract(o.x * 7.31 + o.y * 3.17); }
+  }
+  return vec2(sqrt(d), h);
+}
+` + sh.fragmentShader.replace('#include <alphatest_fragment>', `
+  // plano de projeção pela direção da pele (fios sempre "de pé" sobre a superfície)
+  vec3 an = abs(normalize(vNorPelo)); vec3 pp = vPosPelo * uDens;
+  vec2 q = an.x > an.y && an.x > an.z ? pp.yz : an.y > an.z ? pp.xz : pp.xy;
+  vec2 fio = fioMaisProximo(q);
+  float comp = 0.65 + 0.35 * fio.y;                 // comprimento de cada fio
+  if (uK > comp) discard;
+  float raio = 0.68 * pow(1.0 - uK / comp, 0.75);    // afina até a ponta
+  // longe da câmera os fios ficam menores que um pixel: engrossa e some aos poucos, sem chuvisco
+  float px = length(fwidth(q));
+  float longe = smoothstep(0.1, 0.42, px);
+  raio = mix(raio, 0.72, longe);
+  if (fio.x > raio || (longe > 0.0 && fio.y < longe * 0.9 + uK * longe)) discard;
+  diffuseColor.rgb *= mix(0.55, 1.08, uK / comp) * (0.85 + 0.3 * fio.y);`);
   };
-  m.customProgramCacheKey = () => 'pelo_v2';
+  m.extensions = { derivatives: true };
+  m.customProgramCacheKey = () => 'pelo_v3';
   return m;
 };
 PELE.criarPelo = function (raiz, mesh, n, raioObj) {
