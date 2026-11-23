@@ -158,6 +158,15 @@ Cada monstro recebe um perfil de superfície no shader (escamas, carapaça, quit
 
 Olhos, armas, peças brilhantes, transparentes ou finas ficam como eram. Cada tipo é calculado uma vez (cerca de 0,1 s) e reaproveitado. Para comparar com o original, grave `cdc_esculpir_off = 1` no localStorage.
 
+**Aura elemental dos monstros** (`js/elementos.js`): partículas saem de pontos reais da superfície do corpo, já animados.
+- **Fogo:** chamas, brasas, fumaça, halo de calor e pegadas chamuscadas com brasas no chão.
+- **Gelo:** névoa gelada que escorre até os pés, flocos e chão congelado (geada com cristais) por onde passa.
+- **Veneno:** bolhas, gotas, névoa tóxica e poças.
+- **Outros:** lobos espectrais soltam fiapos fantasmagóricos; afogados escorrem água; múmias levantam areia.
+- **Elites:** "Gélido" ganha a aura de gelo e "Explosivo" solta faíscas.
+
+Os rastros no chão usam um conjunto instanciado (260 marcas por tipo), seguem o relevo e desbotam sozinhos. Só os monstros a até 42 m do jogador emitem efeitos. Os modelos animados low-poly (lobo, morcego, dragonetes, lodo) têm as normais suavizadas por ângulo de vinco: superfície lisa, com garras e pontas de asa ainda definidas.
+
 **Proporções dos personagens:** os modelos estilizados (heróis, NPCs, esqueletos) ganham proporção adulta (cabeça menor, pernas e braços mais longos) por escala dos ossos em `js/animacao.js` (tabela `PROPORCOES`). Use `proporcao: false` num modelo para manter o original.
 
 **Publicação:** o passo a passo está em [docs/STEAM.md](docs/STEAM.md).
