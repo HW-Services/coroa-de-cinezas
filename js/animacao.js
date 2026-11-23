@@ -136,6 +136,11 @@ ANIM.estado = function (m) {
     ossos: ANIM.mapearOssos(m.raiz),
   };
   ANIM.prepararProporcao(m, m.an);
+  // pose de repouso dos ossos que o código gira (cabeça, pescoço, tronco, pernas):
+  // é reposta antes de cada atualização, senão os ajustes se acumulam quando a animação não mexe nesses ossos
+  const O = m.an.ossos, mexidos = new Set();
+  if (O) { [O.cabeca, O.pescoco, O.tronco, ...O.troncos].forEach(o => o && mexidos.add(o)); for (const pr of O.pernas) { mexidos.add(pr.coxa); mexidos.add(pr.canela); mexidos.add(pr.pe); } }
+  m.an.repouso = [...mexidos].map(o => [o, o.quaternion.clone()]);
   if (!T.vn) { ANIM.calibrar(T, 'andar'); if (T.clips.correr && T.clips.correr !== T.clips.andar) ANIM.calibrar(T, 'correr'); }
   return m.an;
 };
@@ -285,6 +290,7 @@ ANIM.animar = function (m, s) {
     if ((base === 'andar' || base === 'correr') && (an.pesos[chave] || 0) > 0 && (an.pesos[chave] || 0) <= 0.5) a.time = fase * a.getClip().duration;
   }
   m.atual = Object.keys(alvo)[0] || null;
+  for (const [o, q] of an.repouso) o.quaternion.copy(q);
   m.mixer.update(dt);
   ANIM.aplicarProporcao(an);
 
