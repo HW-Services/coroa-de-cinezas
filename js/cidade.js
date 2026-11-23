@@ -371,7 +371,7 @@ EST.construirCidade = function (mundo, C) {
   }
   // luzes quentes da praça
   mundo.luzesCidade = [];
-  for (const [x, z] of [[0, 0], [-13, 7], [12, -8]]) { const l = new THREE.PointLight(0xffb070, 2.2, 26, 1.6); l.position.set(x, mundo.h(x, z) + 4, z); raiz.add(l); }
+  for (const [x, z] of [[0, 0], [-13, 7], [12, -8]]) { const l = new THREE.PointLight(0xffb070, 1.7, 32, 1.4); l.position.set(x, mundo.h(x, z) + 7.5, z); /* alta o bastante para não queimar a cabeça de quem passa embaixo */ raiz.add(l); }
   // posições funcionais
   return {
     passagem: { x: 5, z: -5 }, bau: { x: -7, z: -4 }, dispositivo: { x: 11, z: 6 }, chegada: { x: 1, z: 1 }, portal: { x: -2, z: 5 },

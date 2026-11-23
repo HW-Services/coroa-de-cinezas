@@ -130,7 +130,8 @@ MOD.criar3D = function (chave, escala = 1, tinta = null) {
   });
   function prepararMat(m, nome) {
     // modelos realistas mantêm o material PBR original (rugosidade, metal, mapas)
-    if (!cfg.realista) { m.roughness = 0.75; m.metalness = Math.min(m.metalness || 0, 0.3); }
+    // estilizados: a textura vem muito clara (cores pastel); aproxima do albedo real para não estourar ao sol
+    if (!cfg.realista) { m.roughness = 0.75; m.metalness = Math.min(m.metalness || 0, 0.3); m.color.multiplyScalar(0.84); }
     if (cfg.cores && cfg.cores[nome] != null) m.color.set(cfg.cores[nome]);
     if (cfg.emissivo && cfg.emissivo[nome]) { m.emissive = m.color.clone(); m.emissiveIntensity = cfg.emissivo[nome]; }
     if (corTinta) m.color.multiply(corTinta);

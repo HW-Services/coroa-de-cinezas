@@ -429,10 +429,10 @@ GFX.patchPersonagem = function (mat, semNormal) {
     sh.uniforms.uRim = GFX.uRim;
     sh.fragmentShader = 'uniform vec3 uRim;\n' + sh.fragmentShader.replace('#include <dithering_fragment>', `
       float rimF = 1.0 - clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0);
-      gl_FragColor.rgb += uRim * pow(rimF, 3.0) * (0.6 + 0.4 * normal.y);
+      gl_FragColor.rgb += uRim * pow(rimF, 3.0) * (0.75 - 0.55 * max(normal.y, 0.0)); // contorno sem estourar o topo da cabeça
       #include <dithering_fragment>`);
   };
-  mat.customProgramCacheKey = () => 'personagem_v1';
+  mat.customProgramCacheKey = () => 'personagem_v2';
 };
 GFX.sombraContato = function (raiz, raio) {
   if (!GFX.matBlob) GFX.matBlob = new THREE.MeshBasicMaterial({ map: GFX.tex.blob, transparent: true, depthWrite: false, opacity: 0.6, polygonOffset: true, polygonOffsetFactor: -2 });
@@ -538,7 +538,8 @@ GFX.initPos = function () {
   });
   GFX.matFXAA = new THREE.ShaderMaterial(THREE.FXAAShader);
   GFX.qAO = GFX.criarQuad(GFX.matAO); GFX.qBlur = GFX.criarQuad(GFX.matBlur); GFX.qFinal = GFX.criarQuad(GFX.matFinal); GFX.qFXAA = GFX.criarQuad(GFX.matFXAA);
-  GFX.bloom = new THREE.UnrealBloomPass(new THREE.Vector2(256, 256), 0.55, 0.55, 0.92);
+  // limiar acima de 1: só o que emite luz (fogo, magia, runas) brilha; superfícies claras ao sol não viram halo
+  GFX.bloom = new THREE.UnrealBloomPass(new THREE.Vector2(256, 256), 0.6, 0.55, 1.35);
   // SMAA (antisserrilhado morfológico de alta qualidade, usado no Ultra)
   if (THREE.SMAAPass) { GFX.smaa = new THREE.SMAAPass(256, 256); GFX.smaa.renderToScreen = true; }
   GFX.redimensionar();

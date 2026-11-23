@@ -142,5 +142,15 @@ Cada monstro recebe um perfil de superfície no shader (escamas, carapaça, quit
 - Montagem: GitHub Actions → "Montar versão desktop (Steam)". Localmente: `cd desktop && npm install && npm run iniciar`.
 
 **Controle** (`js/controle.js`): Xbox, PlayStation e Steam Deck. O mapeamento dos botões está no topo do arquivo.
+- **Menus, inventário, lojas e telas:** aparece um cursor. O analógico esquerdo move o cursor, e a cruz salta para o botão ou item mais próximo naquela direção.
+  - **A:** clicar.
+  - **X:** ação do item (equipar, comprar, vender, guardar).
+  - **Y:** tirar as jóias.
+  - **B:** voltar.
+  - **LB/RB:** trocar de aba.
+  - **Analógico direito:** rolar a lista ou dar zoom no mapa.
+- **Campos de texto na versão Steam:** abrem o teclado na tela (Steam Deck / Big Picture).
+
+**Proporções dos personagens:** os modelos estilizados (heróis, NPCs, esqueletos) ganham proporção adulta (cabeça menor, pernas e braços mais longos) por escala dos ossos em `js/animacao.js` (tabela `PROPORCOES`). Use `proporcao: false` num modelo para manter o original.
 
 **Publicação:** o passo a passo está em [docs/STEAM.md](docs/STEAM.md).

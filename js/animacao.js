@@ -20,6 +20,30 @@ const ANIM = {
   CIMA: new THREE.Vector3(0, 1, 0),
 };
 
+// ---------- proporções (modelos estilizados "cabeçudos" → proporção adulta) ----------
+// escala uniforme de cada osso (uniforme não distorce a malha); valores relativos ao pai
+const PROPORCOES = {
+  heroico: { spine: 1.06, head: 0.6 / 1.06, upperarml: 1.1 / 1.06, upperarmr: 1.1 / 1.06, handl: 1 / 1.1, handr: 1 / 1.1, upperlegl: 1.5, upperlegr: 1.5, footl: 1.05 / 1.5, footr: 1.05 / 1.5 },
+};
+ANIM.proporcaoDe = (cfg) => cfg.proporcao === false || cfg.realista ? null : PROPORCOES[cfg.proporcao || ((cfg.anim === 'anim_herois' || cfg.anim === 'anim_esqueletos') ? 'heroico' : '')] || null;
+ANIM.prepararProporcao = function (m, an) {
+  const P = ANIM.proporcaoDe(m.cfg); if (!P) return;
+  const ossos = {}; m.raiz.traverse(o => { if (o.isBone && P[o.name] != null) ossos[o.name] = o; });
+  if (!Object.keys(ossos).length) return;
+  an.prop = { P, ossos, ergue: 0 };
+  // as pernas mais longas levantam o corpo: mede a perna na pose atual
+  const coxa = ossos.upperlegl || ossos.upperlegr, pe = ossos.footl || ossos.footr;
+  if (coxa && pe && (P.upperlegl || P.upperlegr)) {
+    m.raiz.updateMatrixWorld(true);
+    const a = coxa.getWorldPosition(new THREE.Vector3()), b = pe.getWorldPosition(new THREE.Vector3());
+    an.prop.ergue = Math.max(0, a.y - b.y) / Math.max(1e-4, m.raiz.scale.y) * ((P.upperlegl || P.upperlegr) - 1);
+  }
+};
+ANIM.aplicarProporcao = function (an) {
+  const pr = an.prop; if (!pr) return;
+  for (const [n, o] of Object.entries(pr.ossos)) o.scale.setScalar(pr.P[n]);
+};
+
 // ---------- ossos ----------
 const RX_INFERIOR = /hip|pelvis|leg|thigh|calf|shin|knee|foot|toe|ankle|upleg|root|coxa|perna|pe_|quadril/i;
 const RX_PE = /foot|ankle|(^|[^a-z])pe([^a-z]|$)/i;
@@ -111,6 +135,7 @@ ANIM.estado = function (m) {
     incX: 0, incZ: 0, pivoY: 0, olharYaw: 0, golpe: 0, flashAnt: 0, acumDt: 0, atqAnt: null, atqNome: null, morteIni: false,
     ossos: ANIM.mapearOssos(m.raiz),
   };
+  ANIM.prepararProporcao(m, m.an);
   if (!T.vn) { ANIM.calibrar(T, 'andar'); if (T.clips.correr && T.clips.correr !== T.clips.andar) ANIM.calibrar(T, 'correr'); }
   return m.an;
 };
@@ -261,9 +286,10 @@ ANIM.animar = function (m, s) {
   }
   m.atual = Object.keys(alvo)[0] || null;
   m.mixer.update(dt);
+  ANIM.aplicarProporcao(an);
 
   // --- complementos procedurais (pivô) ---
-  let y = cfg.voa ? cfg.voa + Math.sin(s.t * 3) * 0.12 : 0;
+  let y = (cfg.voa ? cfg.voa + Math.sin(s.t * 3) * 0.12 : 0) + (an.prop ? an.prop.ergue * (m.morto ? Math.max(0, 1 - (m.mortoT || 0) * 1.5) : 1) : 0);
   let z = 0;
   if ((!T.clips.golpe || cfg.bote) && s.atq != null) { const e = Math.sin(Math.min(1, s.atq) * Math.PI); z = e * 0.7; if (cfg.voa) y -= e * 0.8; }
   if (m.morto && m.semMorte) { pivo.rotation.z = Math.min(1.45, (pivo.rotation.z || 0) + dt * 4); if (cfg.voa) y = Math.max(0, y - (m.mortoT || 0) * 3); pivo.position.set(0, y, z); return; }

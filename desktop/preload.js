@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('CDC_DESKTOP', {
   steamInfo: () => ipcRenderer.invoke('steam:info'),
   conquista: (api) => ipcRenderer.invoke('steam:conquista', String(api)),
   ticketSteam: () => ipcRenderer.invoke('steam:ticket'),
+  tecladoSteam: (o) => ipcRenderer.invoke('steam:teclado', o),
   telaCheia: (sim) => ipcRenderer.invoke('janela:telaCheia', sim),
   sair: () => ipcRenderer.invoke('app:sair'),
 });

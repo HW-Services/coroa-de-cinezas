@@ -80,6 +80,11 @@ ipcMain.handle('steam:ticket', async () => {
   if (!steam) return null;
   try { const t = await steam.auth.getAuthTicketForWebApi('coroa-de-cinzas'); return Buffer.from(t.getBytes()).toString('hex'); } catch (e) { return null; }
 });
+ipcMain.handle('steam:teclado', async (ev, o) => {
+  // teclado na tela (Steam Deck / Big Picture) para preencher campos de texto com o controle
+  if (!steam || !o) return null;
+  try { return await steam.utils.showGamepadTextInput(o.senha ? 1 : 0, 0, String(o.desc || '').slice(0, 100), Math.max(1, Math.min(256, o.max | 0 || 64)), String(o.texto || '')); } catch (e) { return null; }
+});
 ipcMain.handle('app:sair', () => { app.quit(); });
 ipcMain.handle('janela:telaCheia', (ev, sim) => { const w = BrowserWindow.fromWebContents(ev.sender); if (w) w.setFullScreen(sim == null ? !w.isFullScreen() : !!sim); return w ? w.isFullScreen() : false; });
 
