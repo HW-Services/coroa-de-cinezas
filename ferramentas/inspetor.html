@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Inspetor de Modelos</title>
+<style>
+  :root { --fundo: #14110e; --painel: #1f1a15; --borda: #3a3026; --texto: #e8dcc8; --suave: #a8987e; --ouro: #d8a848; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fundo); color: var(--texto); font: 14px/1.45 system-ui, sans-serif; display: grid; grid-template-columns: 360px 1fr; height: 100vh; }
+  aside { background: var(--painel); border-right: 1px solid var(--borda); padding: 16px; overflow: auto; }
+  h1 { font-size: 18px; margin: 0 0 4px; color: var(--ouro); }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--suave); margin: 18px 0 6px; }
+  p { margin: 4px 0; color: var(--suave); }
+  #soltar { border: 2px dashed var(--borda); border-radius: 8px; padding: 18px; text-align: center; cursor: pointer; margin-top: 10px; }
+  #soltar.sobre { border-color: var(--ouro); }
+  button, select, input { background: #2a231c; color: var(--texto); border: 1px solid var(--borda); border-radius: 6px; padding: 5px 9px; font: inherit; }
+  button:hover { border-color: var(--ouro); cursor: pointer; }
+  .clipe { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 3px 0; border-bottom: 1px solid #2a231c; }
+  .clipe span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tag { color: var(--ouro); font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; } td { padding: 2px 0; } td:last-child { text-align: right; color: var(--ouro); }
+  textarea { width: 100%; height: 190px; background: #0e0c0a; color: #c8e0a0; border: 1px solid var(--borda); border-radius: 6px; font: 12px ui-monospace, monospace; }
+  .aviso { color: #ff9a70; }
+  canvas { width: 100%; height: 100%; display: block; }
+  label { display: block; margin: 6px 0 2px; color: var(--suave); }
+  @media (max-width: 760px) { body { grid-template-columns: 1fr; grid-template-rows: auto 60vh; } }
+</style>
+</head>
+<body>
+<aside>
+  <h1>Inspetor de Modelos</h1>
+  <p>Abra um .glb para ver tamanho, ossos, animações e o trecho pronto para o <code>manifesto.json</code>. Para animações em arquivos separados (por exemplo, do Mixamo), selecione todos os arquivos juntos. O primeiro com malha é o modelo.</p>
+  <div id="soltar">Solte os arquivos .glb aqui ou clique para escolher<input id="arq" type="file" accept=".glb,.gltf" multiple hidden></div>
+  <div id="info"></div>
+</aside>
+<main><canvas id="tela"></canvas></main>
+<script src="../js/vendor/three.pacote.min.js"></script>
+<script src="../js/data.js"></script>
+<script>
+'use strict';
+THREE.ColorManagement.enabled = true;
+const tela = document.getElementById('tela');
+const r = new THREE.WebGLRenderer({ canvas: tela, antialias: true });
+r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.shadowMap.enabled = true;
+const cena = new THREE.Scene(); cena.background = new THREE.Color(0x1a1612);
+const cam = new THREE.PerspectiveCamera(40, 1, 0.01, 500);
+cena.add(new THREE.HemisphereLight(0xffffff, 0x302820, 1.2));
+const sol = new THREE.DirectionalLight(0xfff0dd, 2.4); sol.position.set(3, 6, 4); sol.castShadow = true; cena.add(sol);
+const chao = new THREE.Mesh(new THREE.CircleGeometry(6, 48), new THREE.MeshStandardMaterial({ color: 0x3a3228, roughness: 1 })); chao.rotation.x = -Math.PI / 2; chao.receiveShadow = true; cena.add(chao);
+cena.add(new THREE.GridHelper(4, 8, 0x5a4a38, 0x2a231c));
+const pm = new THREE.PMREMGenerator(r); cena.environment = pm.fromScene(new (function () { const s = new THREE.Scene(); s.background = new THREE.Color(0x8a8070); return s; })()).texture;
+let modelo = null, mixer = null, acaoAtual = null, alvoY = 0.9, dist = 4, giro = 0.6, inc = 0.25;
+const relogio = new THREE.Clock();
+function ajustar() { const w = tela.clientWidth, h = tela.clientHeight; r.setSize(w, h, false); r.setPixelRatio(Math.min(2, devicePixelRatio)); cam.aspect = w / h; cam.updateProjectionMatrix(); }
+addEventListener('resize', ajustar); ajustar();
+let arrasto = null;
+tela.addEventListener('pointerdown', e => { arrasto = [e.clientX, e.clientY]; tela.setPointerCapture(e.pointerId); });
+tela.addEventListener('pointermove', e => { if (!arrasto) return; giro -= (e.clientX - arrasto[0]) * 0.008; inc = Math.max(-0.3, Math.min(1.3, inc + (e.clientY - arrasto[1]) * 0.006)); arrasto = [e.clientX, e.clientY]; });
+tela.addEventListener('pointerup', () => { arrasto = null; });
+tela.addEventListener('wheel', e => { dist = Math.max(0.5, Math.min(30, dist * (1 + Math.sign(e.deltaY) * 0.1))); e.preventDefault(); }, { passive: false });
+(function laco() {
+  requestAnimationFrame(laco);
+  const dt = relogio.getDelta(); if (mixer) mixer.update(dt);
+  cam.position.set(Math.sin(giro) * Math.cos(inc) * dist, alvoY + Math.sin(inc) * dist, Math.cos(giro) * Math.cos(inc) * dist); cam.lookAt(0, alvoY, 0);
+  r.render(cena, cam);
+})();
+
+const loader = new THREE.GLTFLoader();
+const dr = new THREE.DRACOLoader(); dr.setDecoderPath('../js/vendor/draco/'); loader.setDRACOLoader(dr);
+const k2 = new THREE.KTX2Loader(); k2.setTranscoderPath('../js/vendor/basis/'); k2.detectSupport(r); loader.setKTX2Loader(k2);
+loader.setMeshoptDecoder(THREE.MeshoptDecoder);
+const abrir = (f) => f.arrayBuffer().then(b => new Promise((ok, falha) => loader.parse(b, '', ok, falha)));
+
+const CLIPES = [['idle', /idle|survey|stand|breath|parad|rest|espera/i], ['andar', /walk|andar|stroll/i], ['correr', /run|sprint|gallop|trot|correr|jog/i], ['golpe', /attack|bite|slash|punch|strike|melee|claw|swipe|ataque|golpe|mordida/i], ['disparo', /shoot|ranged|throw|bow|arrow|disparo|tiro/i], ['conjurar', /cast|spell|magic|conjur|feiti/i], ['erguer', /roar|howl|taunt|scream|cheer|rugido|uivo/i], ['morte', /death|die|dying|dead|morte|morrer/i], ['dano', /hit|hurt|damage|react|impact|dano/i], ['esquiva', /dodge|roll|evade|esquiva/i], ['surgir', /spawn|emerge|rise|surgir|levantar/i]];
+function mapear(nomes) { const out = {}; for (const [k, rx] of CLIPES) { const n = nomes.find(x => rx.test(x) && !Object.values(out).includes(x)); if (n) out[k] = n; } if (!out.idle && nomes.length) out.idle = nomes[0]; return out; }
+
+async function carregar(arquivos) {
+  const info = document.getElementById('info'); info.innerHTML = '<p>Carregando…</p>';
+  const lista = [...arquivos].filter(f => /\.(glb|gltf)$/i.test(f.name));
+  if (!lista.length) { info.innerHTML = '<p class="aviso">Nenhum .glb.</p>'; return; }
+  const gs = [];
+  for (const f of lista) { try { gs.push({ f, g: await abrir(f) }); } catch (e) { info.innerHTML += `<p class="aviso">${f.name}: ${e.message}</p>`; } }
+  let base = gs.find(x => { let n = 0; x.g.scene.traverse(o => { if (o.isMesh) n++; }); return n > 0; }) || gs[0]; if (!base) return;
+  const clips = [...base.g.animations];
+  for (const x of gs) if (x !== base) { const nb = x.f.name.replace(/\.(glb|gltf)$/i, ''); x.g.animations.forEach((c, i) => { if (x.g.animations.length === 1 || /mixamo\.com|^Take ?\d*$/i.test(c.name)) c.name = x.g.animations.length === 1 ? nb : nb + '_' + i; clips.push(c); }); }
+  if (modelo) cena.remove(modelo);
+  modelo = base.g.scene; cena.add(modelo);
+  let tris = 0, malhas = 0, ossos = 0; const texs = new Set(); const mats = new Set(); let metal1 = 0;
+  modelo.traverse(o => { if (o.isBone) ossos++; if (o.isMesh) { malhas++; o.castShadow = true; const g = o.geometry; tris += (g.index ? g.index.count : g.attributes.position.count) / 3; for (const m of [].concat(o.material)) { mats.add(m); if (m.metalness === 1 && !m.metalnessMap) metal1++; for (const k of ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap']) if (m[k] && m[k].image) texs.add(m[k].image.width + '×' + m[k].image.height); } } });
+  const box = new THREE.Box3().setFromObject(modelo, true); const tam = box.getSize(new THREE.Vector3());
+  modelo.position.y -= box.min.y; alvoY = tam.y * 0.5 / Math.max(tam.y, 1e-3) * Math.min(tam.y, 3); const esc = 1.8 / Math.max(tam.y, tam.x, tam.z, 1e-3); modelo.scale.setScalar(esc); modelo.position.y *= esc; alvoY = tam.y * esc * 0.5; dist = 4.2;
+  mixer = new THREE.AnimationMixer(modelo); acaoAtual = null;
+  const nomes = clips.map(c => c.name); const mapa = mapear(nomes);
+  const kb = (lista.reduce((s, f) => s + f.size, 0) / 1024).toFixed(0);
+  const humanoide = tam.y > Math.max(tam.x, tam.z) * 1.4;
+  const opcoes = (o) => Object.entries(o).map(([k, v]) => `<option value="${k}">${v.nome || k}</option>`).join('');
+  info.innerHTML = `
+    <h2>Arquivo</h2><table>
+      <tr><td>Modelo</td><td>${base.f.name}</td></tr><tr><td>Tamanho dos arquivos</td><td>${kb} KB</td></tr>
+      <tr><td>Medidas (L × A × P)</td><td>${tam.x.toFixed(2)} × ${tam.y.toFixed(2)} × ${tam.z.toFixed(2)}</td></tr>
+      <tr><td>Malhas / triângulos</td><td>${malhas} / ${Math.round(tris).toLocaleString('pt-BR')}</td></tr>
+      <tr><td>Ossos</td><td>${ossos}</td></tr><tr><td>Materiais</td><td>${mats.size}</td></tr>
+      <tr><td>Texturas</td><td>${[...texs].join(', ') || '—'}</td></tr></table>
+    ${tris > 60000 ? '<p class="aviso">Muitos triângulos para um monstro comum (ideal: até 30 mil). Use a ferramenta de otimização do LEIA-ME.</p>' : ''}
+    ${metal1 ? '<p class="aviso">Algum material está como 100% metal sem mapa. O jogo trata isso como 0 automaticamente; ajuste "metal" no manifesto se for proposital.</p>' : ''}
+    ${!ossos ? '<p class="aviso">O modelo não tem esqueleto: não vai animar.</p>' : ''}
+    <h2>Animações (${clips.length})</h2>
+    ${clips.map((c, i) => `<div class="clipe"><span title="${c.name}">${c.name} <span class="tag">${Object.entries(mapa).filter(([, v]) => v === c.name).map(([k]) => k).join(', ')}</span></span><button data-i="${i}">▶ ${c.duration.toFixed(1)}s</button></div>`).join('') || '<p>Nenhuma.</p>'}
+    <h2>Usar no jogo</h2>
+    <label>Substituir</label>
+    <select id="tipo"><option value="monstros">Monstro</option><option value="classes">Classe do jogador</option><option value="npcs">NPC</option></select>
+    <select id="alvo"></select>
+    <label>${humanoide ? 'Altura em metros' : 'Tamanho (maior medida) em metros'}</label><input id="medida" type="number" step="0.1" value="${humanoide ? 1.85 : 1.9}">
+    <label>Girar (graus, se o modelo olhar para o lado errado)</label><input id="rot" type="number" step="90" value="0">
+    <h2>Trecho do manifesto</h2><textarea id="saida" readonly></textarea>
+    <p>Copie os .glb para <code>modelos/realista/</code> e cole o trecho na lista "modelos" do <code>manifesto.json</code>.</p>`;
+  info.querySelectorAll('button[data-i]').forEach(b => b.addEventListener('click', () => { const c = clips[+b.dataset.i]; if (acaoAtual) acaoAtual.fadeOut(0.2); acaoAtual = mixer.clipAction(c); acaoAtual.reset().fadeIn(0.2).play(); }));
+  const listas = { monstros: Object.assign({}, INIMIGOS, CHEFES), classes: CLASSES, npcs: NPCS };
+  const tipo = document.getElementById('tipo'), alvo = document.getElementById('alvo');
+  const preencher = () => { alvo.innerHTML = opcoes(listas[tipo.value]); gerar(); };
+  const gerar = () => {
+    const e = { arquivo: base.f.name };
+    const extras = gs.filter(x => x !== base).map(x => x.f.name); if (extras.length) e.animacoes = extras;
+    e[tipo.value] = [alvo.value];
+    e[humanoide ? 'altura' : 'tamanho'] = +document.getElementById('medida').value;
+    const rot = +document.getElementById('rot').value; if (rot) e.rotY = rot;
+    e.clipes = mapa;
+    document.getElementById('saida').value = JSON.stringify(e, null, 2);
+  };
+  tipo.addEventListener('change', preencher); alvo.addEventListener('change', gerar);
+  document.getElementById('medida').addEventListener('input', gerar); document.getElementById('rot').addEventListener('input', gerar);
+  preencher();
+  if (mapa.idle) { acaoAtual = mixer.clipAction(clips.find(c => c.name === mapa.idle)); acaoAtual.play(); }
+}
+const zona = document.getElementById('soltar'), inp = document.getElementById('arq');
+zona.addEventListener('click', () => inp.click());
+inp.addEventListener('change', () => carregar(inp.files));
+for (const ev of ['dragover', 'dragenter']) zona.addEventListener(ev, e => { e.preventDefault(); zona.classList.add('sobre'); });
+for (const ev of ['dragleave', 'drop']) zona.addEventListener(ev, () => zona.classList.remove('sobre'));
+zona.addEventListener('drop', e => { e.preventDefault(); carregar(e.dataTransfer.files); });
+</script>
+</body>
+</html>

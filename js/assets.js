@@ -129,7 +129,8 @@ MOD.criar3D = function (chave, escala = 1, tinta = null) {
     o.material = Array.isArray(o.material) ? novos : novos[0];
   });
   function prepararMat(m, nome) {
-    m.roughness = 0.75; m.metalness = Math.min(m.metalness || 0, 0.3);
+    // modelos realistas mantêm o material PBR original (rugosidade, metal, mapas)
+    if (!cfg.realista) { m.roughness = 0.75; m.metalness = Math.min(m.metalness || 0, 0.3); }
     if (cfg.cores && cfg.cores[nome] != null) m.color.set(cfg.cores[nome]);
     if (cfg.emissivo && cfg.emissivo[nome]) { m.emissive = m.color.clone(); m.emissiveIntensity = cfg.emissivo[nome]; }
     if (corTinta) m.color.multiply(corTinta);
