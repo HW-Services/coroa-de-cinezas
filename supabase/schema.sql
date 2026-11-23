@@ -528,3 +528,15 @@ begin
     end if;
   end loop;
 end $$;
+
+-- ------------------------------------------------------------
+-- Login pela Steam (versão desktop): liga a SteamID a uma conta.
+-- Só a função steam-login (chave de serviço) lê e grava aqui.
+-- ------------------------------------------------------------
+create table if not exists public.contas_steam (
+  steamid text primary key,
+  usuario uuid not null unique references auth.users (id) on delete cascade,
+  criado_em timestamptz not null default now()
+);
+alter table public.contas_steam enable row level security;
+-- sem políticas: nenhum cliente com a chave pública acessa esta tabela

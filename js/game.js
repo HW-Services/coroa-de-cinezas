@@ -873,6 +873,7 @@ J.atualizarJogador = function (dt) {
     if (inp.teclas.KeyA || inp.teclas.ArrowLeft) mx -= 1;
     if (inp.teclas.KeyD || inp.teclas.ArrowRight) mx += 1;
   }
+  if (inp.eixo && (inp.eixo.x || inp.eixo.z)) { mx = inp.eixo.x; mz = inp.eixo.z; } // analógico do controle
   if ((mx || mz) && J.ajusteMov) { const r = J.ajusteMov(mx, mz); mx = r[0]; mz = r[1]; }
   if (mx || mz) jg.irPara = null;
   if (jg.irPara) {

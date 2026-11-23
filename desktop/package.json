@@ -1,0 +1,61 @@
+{
+  "name": "coroa-de-cinzas",
+  "productName": "Coroa de Cinzas",
+  "version": "0.9.0",
+  "description": "Coroa de Cinzas: RPG de ação sombrio.",
+  "main": "main.js",
+  "private": true,
+  "author": "Coroa de Cinzas",
+  "scripts": {
+    "copiar-jogo": "node copiar-jogo.js",
+    "iniciar": "node copiar-jogo.js && electron .",
+    "montar:win": "node copiar-jogo.js && electron-builder --win dir --x64",
+    "montar:linux": "node copiar-jogo.js && electron-builder --linux dir --x64",
+    "montar:mac": "node copiar-jogo.js && electron-builder --mac dir"
+  },
+  "dependencies": {
+    "steamworks.js": "0.4.0"
+  },
+  "devDependencies": {
+    "electron": "44.10.0",
+    "electron-builder": "26.17.0"
+  },
+  "build": {
+    "appId": "br.coroadecinzas.jogo",
+    "productName": "Coroa de Cinzas",
+    "directories": {
+      "output": "saida"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "jogo",
+        "to": "jogo"
+      },
+      {
+        "from": "steam_appid.txt",
+        "to": "steam_appid.txt"
+      }
+    ],
+    "asarUnpack": [
+      "node_modules/steamworks.js/**"
+    ],
+    "win": {
+      "icon": "icone.png"
+    },
+    "linux": {
+      "icon": "icone.png",
+      "category": "Game",
+      "executableName": "coroa-de-cinzas"
+    },
+    "mac": {
+      "icon": "icone.png",
+      "category": "public.app-category.role-playing-games"
+    }
+  }
+}

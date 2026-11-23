@@ -113,3 +113,34 @@ A tecla **Z** (ou o botão "1ª Pessoa") alterna para a visão em primeira pesso
 
 ## Pele realista dos monstros
 Cada monstro recebe um perfil de superfície no shader (escamas, carapaça, quitina, pelo, penas, osso, pedra, magma, gelo, lodo, pele anfíbia, casca, couro e carne): padrão procedural em projeção triplanar que acompanha a animação, relevo por derivadas, cavidades, brilho úmido ou seco, translucidez nas bordas e veios incandescentes pulsando. Lobos, yetis e feras peludas têm pelagem em camadas (qualidade Alta/Ultra, só perto da câmera).
+
+---
+
+## Versão Steam (desktop) e gráficos
+
+**Motor gráfico**
+- **Three.js r164**, empacotado dentro do jogo (`js/vendor/three.pacote.min.js`), sem depender de CDN. O fonte do pacote fica em `js/vendor/three.pacote.fonte.js`.
+- **Sombras suaves com penumbra variável (PCSS)** nas qualidades Alta e Ultra: a sombra é nítida perto do objeto e difusa longe dele.
+- **Antisserrilhado SMAA** no Ultra.
+- As fontes ficam em `fontes/` (licença OFL), e o jogo roda offline.
+
+**Animação realista dos modelos .glb** (`js/animacao.js`)
+- Parado, andar e correr se misturam conforme a velocidade. A passada é calibrada pela pegada do próprio clipe, então o pé não patina.
+- O personagem ataca com o tronco enquanto anda.
+- O corpo se inclina nas curvas, e a cabeça acompanha o jogador.
+- Os pés pousam no relevo (IK) em humanoides; quadrúpedes acompanham o declive.
+- Os golpes têm reação, e os modelos longe da câmera são atualizados com menos frequência.
+
+**Modelos realistas**
+- Coloque `.glb` em `modelos/realista/` e liste-os no `manifesto.json`. Veja [modelos/realista/LEIA-ME.md](modelos/realista/LEIA-ME.md).
+- O **Inspetor de Modelos** (`ferramentas/inspetor.html`) mostra o modelo, as animações e gera a entrada do manifesto.
+
+**Versão desktop** (`desktop/`, Electron)
+- Integração com a Steam: overlay, conquistas e "Entrar com a Steam" (função `supabase/functions/steam-login`).
+- Saves em arquivo, sincronizados pelo Steam Cloud.
+- Tela cheia (F11).
+- Montagem: GitHub Actions → "Montar versão desktop (Steam)". Localmente: `cd desktop && npm install && npm run iniciar`.
+
+**Controle** (`js/controle.js`): Xbox, PlayStation e Steam Deck. O mapeamento dos botões está no topo do arquivo.
+
+**Publicação:** o passo a passo está em [docs/STEAM.md](docs/STEAM.md).

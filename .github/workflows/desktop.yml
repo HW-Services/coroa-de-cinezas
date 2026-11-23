@@ -1,0 +1,38 @@
+name: Montar versão desktop (Steam)
+# Roda manualmente (Actions → "Montar versão desktop" → Run workflow) ou ao criar uma tag v*.
+# Gera as pastas prontas para enviar à Steam (Windows e Linux) como artefatos para download.
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  montar:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            alvo: win
+            pasta: desktop/saida/win-unpacked
+          - os: ubuntu-latest
+            alvo: linux
+            pasta: desktop/saida/linux-unpacked
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Instalar dependências
+        working-directory: desktop
+        run: npm ci || npm install
+      - name: Montar
+        working-directory: desktop
+        run: npm run montar:${{ matrix.alvo }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coroa-de-cinzas-${{ matrix.alvo }}
+          path: ${{ matrix.pasta }}
+          retention-days: 30
