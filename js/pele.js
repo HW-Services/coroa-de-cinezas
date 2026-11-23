@@ -178,7 +178,7 @@ vec3 amostraPele(vec3 p, vec3 n) {
 
 // ---------- pelagem em camadas ----------
 PELE.matPelo = function (base, camada, n, raioObj) {
-  const m = new THREE.MeshStandardMaterial({ color: base.color.clone().multiplyScalar(0.75 + 0.3 * camada / n), roughness: 0.95, metalness: 0, skinning: !!base.skinning, transparent: false, alphaTest: 0.5 });
+  const m = new THREE.MeshStandardMaterial({ color: base.color.clone().multiplyScalar(0.75 + 0.3 * camada / n), roughness: 0.95, metalness: 0, transparent: false, alphaTest: 0.5 });
   const U = { uDesl: { value: (camada / n) * 0.055 * raioObj }, uK: { value: camada / n }, uDens: { value: 38 / Math.max(0.05, raioObj) } };
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, U);
@@ -189,7 +189,7 @@ PELE.matPelo = function (base, camada, n, raioObj) {
   if (fio < uK * 0.92 + 0.05) discard;
   diffuseColor.rgb *= 0.55 + uK * 0.6;`);
   };
-  m.customProgramCacheKey = () => 'pelo_' + (base.skinning ? 's' : 'm');
+  m.customProgramCacheKey = () => 'pelo_v2';
   return m;
 };
 PELE.criarPelo = function (raiz, mesh, n, raioObj) {
@@ -213,7 +213,13 @@ PELE.aplicar = function (m, perfilId) {
   m._pele = perfilId;
   // tamanho do modelo para a densidade do padrão
   const malhas = [];
-  m.raiz.traverse(o => { if (o.isMesh && o.material && !o.userData.pelo && o.material.type !== 'MeshBasicMaterial') malhas.push(o); });
+  // tecidos e acessórios (capuz, capa, chapéu, elmo) não recebem pele: ganham material próprio sem o padrão
+  const TECIDO = /Hood|Cape|Cloak|Hat|Helmet|Crossbow|Sword|Shield|Axe|Staff|Blade/i;
+  m.raiz.traverse(o => {
+    if (!o.isMesh || !o.material || o.userData.pelo || o.material.type === 'MeshBasicMaterial') return;
+    if (TECIDO.test(o.name) && !Array.isArray(o.material)) { const c = o.material.clone(); c.userData.emi = o.material.emissive.clone(); c.userData.emiI = o.material.emissiveIntensity; if (typeof GFX !== 'undefined') GFX.patchPersonagem(c, true); if (m.mats) m.mats.push(c); o.material = c; return; }
+    malhas.push(o);
+  });
   const feitos = new Set();
   for (const o of malhas) {
     const mats = Array.isArray(o.material) ? o.material : [o.material];

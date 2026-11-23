@@ -69,7 +69,8 @@ A3D.molde = function (chave) {
   const opcionais = /Sword|Shield|Axe|Mug|Hat|Cape|Helmet|Staff|Wand|Spellbook|Crossbow|Knife|Throwable/;
   const box = new THREE.Box3();
   const v = new THREE.Vector3(), acc = new THREE.Vector3(), tmpV = new THREE.Vector3(), mtx = new THREE.Matrix4();
-  const fator = (at) => { const arr = at.isInterleavedBufferAttribute ? at.data.array : at.array; return !at.normalized ? 1 : arr instanceof Int16Array ? 1 / 32767 : arr instanceof Uint16Array ? 1 / 65535 : arr instanceof Int8Array ? 1 / 127 : arr instanceof Uint8Array ? 1 / 255 : 1; };
+  // getX/getY já devolvem valores desnormalizados desde o r144 (não multiplicar de novo)
+  const fator = () => 1;
   cena.traverse(o => {
     if (!o.isMesh) return;
     if (opcionais.test(o.name)) return; // só o corpo define a escala
@@ -122,13 +123,12 @@ MOD.criar3D = function (chave, escala = 1, tinta = null) {
     const lista = Array.isArray(o.material) ? o.material : [o.material];
     const novos = lista.map(m0 => {
       const m = m0.clone();
-      if (!m.isMeshStandardMaterial) { const s = new THREE.MeshStandardMaterial({ color: m.color, map: m.map || null, skinning: true }); m.dispose(); return prepararMat(s, m0.name); }
+      if (!m.isMeshStandardMaterial) { const s = new THREE.MeshStandardMaterial({ color: m.color, map: m.map || null }); m.dispose(); return prepararMat(s, m0.name); }
       return prepararMat(m, m0.name);
     });
     o.material = Array.isArray(o.material) ? novos : novos[0];
   });
   function prepararMat(m, nome) {
-    m.skinning = true;
     m.roughness = 0.75; m.metalness = Math.min(m.metalness || 0, 0.3);
     if (cfg.cores && cfg.cores[nome] != null) m.color.set(cfg.cores[nome]);
     if (cfg.emissivo && cfg.emissivo[nome]) { m.emissive = m.color.clone(); m.emissiveIntensity = cfg.emissivo[nome]; }

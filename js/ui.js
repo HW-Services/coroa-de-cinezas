@@ -796,7 +796,7 @@ UI.montarQualidade = function () {
   const box = $('#qualidadeGfx'); if (!box) return; box.innerHTML = '';
   for (const [id, q] of Object.entries(QUALIDADES_GFX)) {
     const b = document.createElement('button'); b.className = 'btn' + (GFX.qualidade === id ? '' : ' sec'); b.textContent = q.nome;
-    b.addEventListener('click', () => { GFX.definirQualidade(id); UI.montarQualidade(); UI.aviso('Qualidade gráfica: ' + q.nome); });
+    b.addEventListener('click', () => { GFX.definirQualidade(id); UI.montarQualidade(); UI.aviso('Qualidade gráfica: ' + q.nome + (GFX.pcss !== (id !== 'media') ? ' (as sombras suaves mudam ao reabrir o jogo)' : '')); });
     box.appendChild(b);
   }
 };

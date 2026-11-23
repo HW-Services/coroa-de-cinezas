@@ -17,9 +17,51 @@ const GFX = { tempo: 0, tex: {}, decals: [], qualidade: 'ultra' };
 const QUALIDADES_GFX = {
   media: { nome: 'Média', pr: 1, sombra: 2048, ao: false, grama: 7000, bloom: true },
   alta: { nome: 'Alta', pr: 1.5, sombra: 2048, ao: true, grama: 16000, bloom: true },
-  ultra: { nome: 'Ultra', pr: 2, sombra: 4096, ao: true, grama: 32000, bloom: true },
+  ultra: { nome: 'Ultra', pr: 2, sombra: 4096, ao: true, grama: 32000, bloom: true, smaa: true },
 };
 try { const q = localStorage.getItem('coroaDeCinzas_gfx'); if (q && QUALIDADES_GFX[q]) GFX.qualidade = q; } catch (e) { }
+
+// ============================================================
+//  Sombras suaves com penumbra variável (PCSS)
+//  Perto do objeto a sombra é nítida; longe dele, difusa, como sob o sol real.
+//  O trecho é compilado nos shaders no início, por isso vale a partir do próximo carregamento.
+// ============================================================
+GFX.pcss = GFX.qualidade !== 'media';
+GFX.instalarPCSS = function () {
+  if (!GFX.pcss || GFX._pcssOk) return; GFX._pcssOk = true;
+  const C = THREE.ShaderChunk;
+  const funcoes = `
+  #define PCSS_AMOSTRAS 16
+  vec2 discoPCSS[PCSS_AMOSTRAS];
+  void iniciarDiscoPCSS(const in vec2 semente) {
+    float ang = rand(semente) * PI2, raio = 1.0 / float(PCSS_AMOSTRAS);
+    for (int i = 0; i < PCSS_AMOSTRAS; i++) { discoPCSS[i] = vec2(cos(ang), sin(ang)) * pow(raio, 0.75); raio += 1.0 / float(PCSS_AMOSTRAS); ang += PI2 * 7.0 / float(PCSS_AMOSTRAS); }
+  }
+  float sombraPCSS(sampler2D mapa, vec2 tamMapa, vec4 c) {
+    iniciarDiscoPCSS(c.xy);
+    float texel = 1.0 / tamMapa.x;
+    // 1) profundidade média de quem bloqueia a luz
+    float busca = 0.0065, soma = 0.0; float n = 0.0;
+    for (int i = 0; i < PCSS_AMOSTRAS; i++) { float d = unpackRGBAToDepth(texture2D(mapa, c.xy + discoPCSS[i] * busca)); if (d < c.z) { soma += d; n += 1.0; } }
+    if (n < 0.5) return 1.0;
+    float bloqueio = soma / n;
+    // 2) penumbra proporcional à distância bloqueador → receptor (sol com ~1,7° de diâmetro aparente)
+    float raioF = clamp((c.z - bloqueio) * 0.06, texel * 1.5, 0.006);
+    // 3) filtragem
+    float luz = 0.0;
+    for (int i = 0; i < PCSS_AMOSTRAS; i++) {
+      luz += step(c.z, unpackRGBAToDepth(texture2D(mapa, c.xy + discoPCSS[i] * raioF)));
+      luz += step(c.z, unpackRGBAToDepth(texture2D(mapa, c.xy - discoPCSS[i].yx * raioF)));
+    }
+    return luz / float(2 * PCSS_AMOSTRAS);
+  }
+`;
+  let sh = C.shadowmap_pars_fragment;
+  sh = sh.replace('#ifdef USE_SHADOWMAP', '#ifdef USE_SHADOWMAP\n' + funcoes);
+  sh = sh.replace('#if defined( SHADOWMAP_TYPE_PCF )', 'return sombraPCSS( shadowMap, shadowMapSize, shadowCoord );\n\t\t#if defined( SHADOWMAP_TYPE_PCF )');
+  C.shadowmap_pars_fragment = sh;
+};
+GFX.instalarPCSS();
 
 // ============================================================
 //  Ruído periódico e Voronoi (texturas que repetem sem emenda)
@@ -174,7 +216,7 @@ GFX.gerarTexturas = function () {
     const k = clamp(veio * 0.85 + f * 0.45 - 0.15, 0, 1);
     return [k, 0.1 + k * 1.2, 1.0, 0.35 + k * 0.45, 0.08 + k * 0.1];
   }, 1);
-  GFX.tex.lavaA.repeat.set(10, 10);
+  GFX.tex.lavaA.repeat.set(1, 1); // r164: cada mapa usa a própria repetição (no r128 valia a do normalMap)
   // grama (lâminas com transparência)
   {
     const c = document.createElement('canvas'); c.width = 128; c.height = 256; const g = c.getContext('2d');
@@ -308,7 +350,7 @@ GFX.criarGrama = function (mundo) {
       float vento = sin(tempo * 1.6 + wpG.x * 0.31 + wpG.z * 0.22) * 0.18 + sin(tempo * 3.7 + wpG.x * 1.1) * 0.05;
       transformed.x += vento * hG; transformed.z += vento * 0.5 * hG;`);
     // escurece a base (oclusão)
-    sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n diffuseColor.rgb *= mix(0.55, 1.35, vUv.y);')
+    sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n diffuseColor.rgb *= mix(0.55, 1.35, vMapUv.y);')
       .replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>\n normal = normalize((viewMatrix * vec4(0.15, 1.0, 0.1, 0.0)).xyz);');
   };
   mat.customProgramCacheKey = () => 'grama_v2';
@@ -497,6 +539,8 @@ GFX.initPos = function () {
   GFX.matFXAA = new THREE.ShaderMaterial(THREE.FXAAShader);
   GFX.qAO = GFX.criarQuad(GFX.matAO); GFX.qBlur = GFX.criarQuad(GFX.matBlur); GFX.qFinal = GFX.criarQuad(GFX.matFinal); GFX.qFXAA = GFX.criarQuad(GFX.matFXAA);
   GFX.bloom = new THREE.UnrealBloomPass(new THREE.Vector2(256, 256), 0.55, 0.55, 0.92);
+  // SMAA (antisserrilhado morfológico de alta qualidade, usado no Ultra)
+  if (THREE.SMAAPass) { GFX.smaa = new THREE.SMAAPass(256, 256); GFX.smaa.renderToScreen = true; }
   GFX.redimensionar();
   window.addEventListener('resize', GFX.redimensionar);
 };
@@ -515,6 +559,7 @@ GFX.redimensionar = function () {
   GFX.rtAO2 = GFX.rtAO.clone();
   GFX.rtLDR = new THREE.WebGLRenderTarget(w, h, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false });
   GFX.bloom.setSize(w, h);
+  if (GFX.smaa) GFX.smaa.setSize(w, h);
   GFX.matAO.uniforms.res.value.set(hw, hh);
   GFX.matFinal.uniforms.res.value.set(w, h);
   GFX.matFXAA.uniforms.resolution.value.set(1 / w, 1 / h);
@@ -556,6 +601,7 @@ GFX.render = function () {
   const f = GFX.matFinal.uniforms; f.tCena.value = GFX.rtCena.texture; f.tAO.value = GFX.rtAO.texture; f.usaAO.value = usaAO ? 1 : 0; f.tempo.value = GFX.tempo;
   r.setRenderTarget(GFX.rtLDR); r.render(GFX.qFinal.s, GFX.camQuad);
   // 5) antisserrilhado para a tela
+  if (Q.smaa && GFX.smaa) { GFX.smaa.render(r, null, GFX.rtLDR); return; }
   GFX.matFXAA.uniforms.tDiffuse.value = GFX.rtLDR.texture;
   r.setRenderTarget(null); r.render(GFX.qFXAA.s, GFX.camQuad);
 };

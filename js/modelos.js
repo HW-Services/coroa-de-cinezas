@@ -676,7 +676,7 @@ MOD.animar = function (m, s) {
 MOD.flash = function (m, k) {
   for (const mat of m.mats) {
     if (k > 0) { mat.emissive.setRGB(1, 0.75, 0.6); mat.emissiveIntensity = k * 0.4 + mat.userData.emiI * (1 - k); }
-    else { mat.emissive.copy(mat.userData.emi); mat.emissiveIntensity = mat.userData.emiI; }
+    else { const e0 = mat.userData.emi; if (e0 && e0.isColor) mat.emissive.copy(e0); else mat.emissive.setHex(+e0 || 0); mat.emissiveIntensity = mat.userData.emiI; }
   }
 };
 MOD.tingir = function (m, cor, k) {
