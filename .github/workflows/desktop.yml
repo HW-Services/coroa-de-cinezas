@@ -21,8 +21,8 @@ jobs:
             pasta: desktop/saida/linux-unpacked
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - name: Instalar dependências
@@ -31,7 +31,7 @@ jobs:
       - name: Montar
         working-directory: desktop
         run: npm run montar:${{ matrix.alvo }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: coroa-de-cinzas-${{ matrix.alvo }}
           path: ${{ matrix.pasta }}

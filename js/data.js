@@ -609,7 +609,8 @@ function escalaVida(l) { return (1 + 0.16 * (l - 1)) * Math.pow(1.05, l - 1); }
 function escalaDano(l) { return (1 + 0.11 * (l - 1)) * Math.pow(1.035, l - 1); }
 function xpProximo(l) { return Math.round(90 * Math.pow(l, 1.9) + 60 * l); }
 // experiência proporcional ao nível: uma zona completa rende cerca de um nível
-function xpInimigo(l) { return Math.max(1, Math.round(xpProximo(l) / 450)); }
+// mínimo de 5 por abate (antes os níveis 1 e 2 davam só 1); a partir do nível ~5 vale a curva normal
+function xpInimigo(l) { return Math.max(5, Math.round(xpProximo(l) / 450)); }
 
 
 // ------------------------------------------------------------
